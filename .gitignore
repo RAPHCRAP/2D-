@@ -1,0 +1,16 @@
+# Visual Studio cache
+.vs/
+*.ipch
+
+# Build outputs
+x64/
+*.pdb
+*.exe
+*.obj
+*.dll
+*.lib
+
+# Debug folders
+Debug/
+Release/
+*.log

@@ -32,6 +32,11 @@ namespace MathUtils {
     }
 
 
+    float length(const Vector3f& v) {
+        return std::sqrt(v.x * v.x + v.y * v.y + v.z * v.z);
+    }
+
+
     inline float degreesToRadians(float degrees) {
         return degrees * (3.14159265f / 180.0f);
     }
@@ -115,49 +120,29 @@ namespace MathUtils {
 
 class Screen {
 public:
-    Vector3f up;
-    Vector3f points[4];
+    Vector3f position;   // Camera center
+    Vector3f forward;    // View direction (normalized)
+    Vector3f up;         // What is 'up' (normalized)
 
-    Screen(Vector2u winSize)
-    {
-        Vector2i size = static_cast<Vector2i>(winSize);
-        points[0] = Vector3f(-size.x / 2, size.y / 2, 0);
-        points[1] = Vector3f(size.x / 2, size.y / 2, 0);
-        points[2] = Vector3f(-size.x / 2, -size.y / 2, 0);
-        points[3] = Vector3f(size.x / 2, -size.y / 2, 0);
-
-        up = Vector3f(0.0f, 1.0f, 0.0f);
-    }
-
-    Vector3f getCenter() const
-    {
-        return (points[0] + points[1] + points[2] + points[3]) * 0.25f;
-    }
-
-    Vector3f getPlaneNormal() const
+    Screen(Vector3f pos = { 0, 0, -500 }, Vector3f lookAt = { 0, 0, 0 }, Vector3f worldUp = { 0, 1, 0 }) 
     {
         using namespace MathUtils;
-        Vector3f U = points[1] - points[0];
-        Vector3f V = points[2] - points[0];
-        return normalize(cross(U, V));
+        position = pos;
+        forward = normalize(lookAt - pos);
+        Vector3f right = normalize(cross(forward, worldUp));
+        up = cross(right, forward);
     }
 
-    Vector3f right() const
+    Vector3f getCenter() const { return position; }
+
+    Vector3f right() const 
     {
         using namespace MathUtils;
-        return normalize(points[1] - points[0]);
+        return normalize(cross(forward, up));
     }
 
-    Vector3f forward() const
-    {
-        return getPlaneNormal();
-    }
-
-    void move(const Vector3f& delta)
-    {
-        for (auto& v : points) {
-            v += delta;
-        }
+    void move(const Vector3f& delta) {
+        position += delta;
     }
 
     Vector3f rotateAroundAxis(const Vector3f& P, const Vector3f& axis, const Vector3f& center, float angleRad)
@@ -177,40 +162,43 @@ public:
         return center + rotated;
     }
 
-    void rotateAround(const Vector3f& axis, float angleRad)
-    {
+    //void rotateAround(const Vector3f& axis, float angleRad)
+    //{
+    //    using namespace MathUtils;
+
+    //    Vector3f center = getCenter();
+    //    for (auto& P : points) {
+    //        P = rotateAroundAxis(P, axis, center, angleRad);
+    //    }
+
+    //    up = rotateAroundAxis(up, axis, Vector3f(0, 0, 0), angleRad); // up is a direction
+    //}
+
+    void rotateAroundUp(float deltaAngleDegrees, float deltaTime) {
         using namespace MathUtils;
-
-        Vector3f center = getCenter();
-        for (auto& P : points) {
-            P = rotateAroundAxis(P, axis, center, angleRad);
-        }
-
-        up = rotateAroundAxis(up, axis, Vector3f(0, 0, 0), angleRad); // up is a direction
+        float angle = degreesToRadians(deltaAngleDegrees) * deltaTime;
+        forward = rotateAroundAxis(forward, up, Vector3f(0, 0, 0), angle);
     }
 
-    void rotateAroundUp(float deltaAngleDegrees, float deltaTime)
-    {
+    void rotateInPlane(float deltaAngleDegrees, float deltaTime) {
         using namespace MathUtils;
+        float angle = degreesToRadians(deltaAngleDegrees) * deltaTime;
+        Vector3f N = forward;
 
-        Vector3f axis = normalize(up);
-        float angleRad = degreesToRadians(deltaAngleDegrees) * deltaTime;
-        rotateAround(axis, angleRad);
+        Vector3f newRight = rotateAroundAxis(right(), N, Vector3f(0, 0, 0), angle);
+        up = rotateAroundAxis(up, N, Vector3f(0, 0, 0), angle);
+
+        // Recalculate forward to ensure orthonormality (optional)
+        forward = normalize(forward);
     }
 
-    void rotateInPlane(float deltaAngleDegrees, float deltaTime)
-    {
+
+    void pitch(float deltaAngleDegrees, float deltaTime) {
         using namespace MathUtils;
-
-        Vector3f center = getCenter();
-        Vector3f N = getPlaneNormal();
-        float angleRad = degreesToRadians(deltaAngleDegrees) * deltaTime;
-
-        for (auto& P : points) {
-            P = rotateAroundAxis(P, N, center, angleRad);
-        }
-
-        up = rotateAroundAxis(up, N, Vector3f(0, 0, 0), angleRad); 
+        float angle = degreesToRadians(deltaAngleDegrees) * deltaTime;
+        Vector3f rightVec = right();
+        forward = rotateAroundAxis(forward, rightVec, Vector3f(0, 0, 0), angle);
+        up = normalize(cross(rightVec, forward));
     }
 };
 
@@ -356,32 +344,27 @@ public:
 };
 
 
-class Polygon3D : public VObject 
-{
+class Polygon3D : public VObject {
 public:
-    
     vector<Vector3f> points;
     bool filled = false;
 
-    explicit Polygon3D(size_t pointCount) : points(pointCount)
-    {
-        up = { 0.0f,0.0f,0.0f };
+    explicit Polygon3D(size_t pointCount) : points(pointCount) {
         rounded();
-        
+        up = getPlaneNormal(); 
+
+
     }
 
-    void setPoint(size_t index, const Vector3f& point) 
-    {
+    void setPoint(size_t index, const Vector3f& point) {
         assert(index < points.size());
         points[index] = point;
     }
 
-    void move(const Vector3f& delta) 
-    {
+    void move(const Vector3f& delta) {
         for (auto& v : points) {
             v += delta;
         }
-
     }
 
     void fill() { filled = true; }
@@ -398,9 +381,7 @@ public:
         return sum / static_cast<float>(points.size());
     }
 
-    Vector3f getPlaneNormal() const 
-    
-    {
+    Vector3f getPlaneNormal() const {
         using namespace MathUtils;
         if (points.size() < 3) return Vector3f(0.f, 0.f, 0.f);
 
@@ -418,8 +399,7 @@ public:
         float theta = 2 * PI / edges;
         float radius = 250.0f;
 
-        for (unsigned i = 0; i < edges; ++i) 
-        {
+        for (unsigned i = 0; i < edges; ++i) {
             float angle = i * theta;
             setPoint(i, Vector3f(
                 radius * cos(angle),
@@ -427,10 +407,11 @@ public:
                 0.0f
             ));
         }
+
+        up = getPlaneNormal();  //  Set up properly after shape generation
     }
 
-    Vector3f rotateAroundAxis(const Vector3f& P, const Vector3f& axis, const Vector3f& center, float angleRad) const 
-    {
+    Vector3f rotateAroundAxis(const Vector3f& P, const Vector3f& axis, const Vector3f& center, float angleRad) const {
         using namespace MathUtils;
 
         Vector3f r = P - center;
@@ -446,18 +427,58 @@ public:
         return center + rotated;
     }
 
-    void rotateAround(const Vector3f& axis, float angleRad) 
-    {
+    void rotateAround(const Vector3f& axis, float angleRad) {
         Vector3f center = getCenter();
         for (auto& P : points) {
             P = rotateAroundAxis(P, axis, center, angleRad);
         }
-        up = rotateAroundAxis(up, axis, Vector3f(0.f, 0.f, 0.f), angleRad); 
+        up = rotateAroundAxis(up, axis, Vector3f(0.f, 0.f, 0.f), angleRad);
     }
 
-    void rotateAroundUp(float deltaAngleDegrees, float deltaTime) {
+    void rotateAroundA(Vector3f worldUp,float deltaAngleDegrees, float deltaTime)
+    {
         using namespace MathUtils;
-        rotateAround(normalize(up), degreesToRadians(deltaAngleDegrees) * deltaTime);
+
+        Vector3f normal = getPlaneNormal();
+
+        Vector3f projectedUp = worldUp - normal * dot(worldUp, normal);
+
+        if (length(projectedUp) < 0.001f) {
+
+            worldUp = Vector3f(1.0f, 0.0f, 0.0f);
+            projectedUp = worldUp - normal * dot(worldUp, normal);
+        }
+
+        Vector3f axis = normalize(projectedUp);
+
+        float angleRad = degreesToRadians(deltaAngleDegrees) * deltaTime;
+        rotateAround(axis, angleRad);
+    }
+
+    void rotateAroundY(float deltaAngleDegrees, float deltaTime) {
+        
+        
+        Vector3f Up = Vector3f(0.0f, 1.0f, 0.0f);
+
+
+        rotateAroundA(Up,deltaAngleDegrees,deltaTime);
+       
+    }
+
+    void rotateAroundX(float deltaAngleDegrees, float deltaTime) {
+
+
+        Vector3f Up = Vector3f(0.1f, 0.0f, 0.0f);
+
+        rotateAroundA(Up, deltaAngleDegrees, deltaTime);
+    }
+
+    void rotateAroundZ(float deltaAngleDegrees, float deltaTime) {
+
+
+        Vector3f Up = Vector3f(0.0f, 0.0f, 1.0f);
+
+        rotateAroundA(Up, deltaAngleDegrees, deltaTime);
     }
 
     void rotateInPlane(float deltaAngleDegrees, float deltaTime) {
@@ -471,9 +492,10 @@ public:
             P = rotateAroundAxis(P, normal, center, angleRad);
         }
 
-        up = rotateAroundAxis(up, normal, Vector3f(0.f, 0.f, 0.f), angleRad); // rotate direction only
+        up = rotateAroundAxis(up, normal, Vector3f(0.f, 0.f, 0.f), angleRad); 
     }
 };
+
 
 void display3DVector(Vector3f v)
 {
@@ -485,43 +507,44 @@ void display2DVector(Vector2f v)
     cout << "(" << v.x << ", " << v.y << ")   ";
 }
 
-void createFragment(Fragment& fg ,Screen* sc, VObject* po,RenderWindow* window)
+Vector2f projectToScreen2D(const Vector3f& point, const Screen& screen) 
 {
     using namespace MathUtils;
 
-    float scale = 100.0f;
+    Vector3f toPoint = point - screen.getCenter();
+
+    float x = dot(toPoint, screen.right());
+    float y = dot(toPoint, screen.up);
+
+    return Vector2f(x, y);
+}
+
+
+
+void createFragment(Fragment& fg, Screen* sc, VObject* po, RenderWindow* window) {
+    using namespace MathUtils;
+    float scale = 1.0f;
 
     Polygon3D* pol = static_cast<Polygon3D*>(po);
-
     fg.changeEdges(pol->points.size());
 
     Vector2f screenCenter = Vector2f(window->getSize()) * 0.5f;
 
-    for (int i =0; i<fg.points.size();i++)
-    {
-
-        Vector2f local = projectPointToPlane2D(pol->points[i], sc->points[0], sc->points[1], sc->points[2], sc->getCenter());
-        
-
-
-        
-        Vector2f px = screenCenter + local * scale;
-
+    for (int i = 0; i < fg.points.size(); i++) {
+        Vector2f local = projectToScreen2D(pol->points[i], *sc);
+        Vector2f px = screenCenter + Vector2f(local.x, -local.y) * scale;
         fg.setPoint(i, px);
-
         fg.updateShape();
-
-
     }
-    
 }
+
 
 bool isInFrontOfCamera(const Polygon3D& poly, const Screen& screen)
 {
     using namespace MathUtils;
 
-    Vector3f toPolygon = poly.getCenter() - screen.getCenter();
-    Vector3f forward = screen.forward();
+    Vector3f toPolygon = poly.getCenter() - screen.position;
+    Vector3f forward = screen.forward; 
 
     float dotResult = dot(toPolygon, forward);
 
@@ -538,7 +561,7 @@ int main()
 
 
     
-    sc = new Screen(window.getSize());
+    sc = new Screen;
     
 
         float moveSpeed = 4.0f;
@@ -568,7 +591,7 @@ int main()
                     }
                 }
 
-                cout << "screen up:"; display3DVector(sc->points[0]); 
+                cout << "screen centre:"; display3DVector(sc->getCenter()); 
                 cout << "object up:"; display3DVector(po.points[0]);
 
              /*   
@@ -600,7 +623,7 @@ int main()
                 }
 
 
-
+                */
 
                 if (Keyboard::isKeyPressed(Keyboard::Q))
                 {
@@ -618,9 +641,11 @@ int main()
                 }
 
 
+                
+
                 if (Keyboard::isKeyPressed(Keyboard::R))
                 {
-                    po.rotateAroundUp(+4.0f, 1.f);
+                    po.rotateAroundX(+4.0f, 1.f);
                     
 
 
@@ -629,11 +654,46 @@ int main()
 
                 if (Keyboard::isKeyPressed(Keyboard::T))
                 {
-                    po.rotateAroundUp(-4.0f, 1.f);
+                    po.rotateAroundX(-4.0f, 1.f);
 
 
-                }*/
+                }
 
+
+
+                if (Keyboard::isKeyPressed(Keyboard::Y))
+                {
+                    po.rotateAroundY(+4.0f, 1.f);
+
+
+
+                }
+
+
+                if (Keyboard::isKeyPressed(Keyboard::U))
+                {
+                    po.rotateAroundY(-4.0f, 1.f);
+
+
+                }
+
+
+
+                if (Keyboard::isKeyPressed(Keyboard::I))
+                {
+                    po.rotateAroundZ(+4.0f, 1.f);
+
+
+
+                }
+
+
+                if (Keyboard::isKeyPressed(Keyboard::O))
+                {
+                    po.rotateAroundZ(-4.0f, 1.f);
+
+
+                }
         
                 if (Keyboard::isKeyPressed(Keyboard::W))
                 {
@@ -665,21 +725,21 @@ int main()
 
 
 
-                if (Keyboard::isKeyPressed(Keyboard::Q))
-                {
-                              sc->rotateInPlane(+4.0f, 1.f);
+                //if (Keyboard::isKeyPressed(Keyboard::Q))
+                //{
+                //              sc->rotateInPlane(+4.0f, 1.f);
 
-                }
-
-
-                if (Keyboard::isKeyPressed(Keyboard::E))
-                {
-                                sc->rotateInPlane(-4.0f, 1.f);
-
-                }
+                //}
 
 
-                if (Keyboard::isKeyPressed(Keyboard::R))
+                //if (Keyboard::isKeyPressed(Keyboard::E))
+                //{
+                //                sc->rotateInPlane(-4.0f, 1.f);
+
+                //}
+
+
+               /* if (Keyboard::isKeyPressed(Keyboard::R))
                 {
 
                             sc->rotateAroundUp(+4.0f, 1.f);
@@ -691,7 +751,7 @@ int main()
                 {
                                      sc->rotateAroundUp(-4.0f, 1.f);
 
-                }
+                }*/
 
                 createFragment(p, sc, &po,&window);
 
@@ -703,7 +763,7 @@ int main()
 
         window.clear();
 
-        if(!isInFrontOfCamera(po,*sc))
+        if(isInFrontOfCamera(po,*sc))
         {
             window.draw(p);
         }
