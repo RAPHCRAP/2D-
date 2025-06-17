@@ -1,0 +1,47 @@
+﻿C:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Microsoft\VC\v170\Microsoft.CppBuild.targets(531,5): warning MSB8028: The intermediate directory (x64\Debug\) contains files shared from another project (GAME_RIYAL.vcxproj).  This can lead to incorrect clean and rebuild behavior.
+  testy.cpp
+D:\WORK\vsCode\PROJ\GAME_RIYAL\testy.cpp(124,50): warning C4244: 'argument': conversion from 'int' to 'T', possible loss of data
+D:\WORK\vsCode\PROJ\GAME_RIYAL\testy.cpp(124,50): warning C4244:         with
+D:\WORK\vsCode\PROJ\GAME_RIYAL\testy.cpp(124,50): warning C4244:         [
+D:\WORK\vsCode\PROJ\GAME_RIYAL\testy.cpp(124,50): warning C4244:             T=float
+D:\WORK\vsCode\PROJ\GAME_RIYAL\testy.cpp(124,50): warning C4244:         ]
+D:\WORK\vsCode\PROJ\GAME_RIYAL\testy.cpp(124,38): warning C4244: 'argument': conversion from 'int' to 'T', possible loss of data
+D:\WORK\vsCode\PROJ\GAME_RIYAL\testy.cpp(124,38): warning C4244:         with
+D:\WORK\vsCode\PROJ\GAME_RIYAL\testy.cpp(124,38): warning C4244:         [
+D:\WORK\vsCode\PROJ\GAME_RIYAL\testy.cpp(124,38): warning C4244:             T=float
+D:\WORK\vsCode\PROJ\GAME_RIYAL\testy.cpp(124,38): warning C4244:         ]
+D:\WORK\vsCode\PROJ\GAME_RIYAL\testy.cpp(125,49): warning C4244: 'argument': conversion from 'int' to 'T', possible loss of data
+D:\WORK\vsCode\PROJ\GAME_RIYAL\testy.cpp(125,49): warning C4244:         with
+D:\WORK\vsCode\PROJ\GAME_RIYAL\testy.cpp(125,49): warning C4244:         [
+D:\WORK\vsCode\PROJ\GAME_RIYAL\testy.cpp(125,49): warning C4244:             T=float
+D:\WORK\vsCode\PROJ\GAME_RIYAL\testy.cpp(125,49): warning C4244:         ]
+D:\WORK\vsCode\PROJ\GAME_RIYAL\testy.cpp(125,37): warning C4244: 'argument': conversion from 'int' to 'T', possible loss of data
+D:\WORK\vsCode\PROJ\GAME_RIYAL\testy.cpp(125,37): warning C4244:         with
+D:\WORK\vsCode\PROJ\GAME_RIYAL\testy.cpp(125,37): warning C4244:         [
+D:\WORK\vsCode\PROJ\GAME_RIYAL\testy.cpp(125,37): warning C4244:             T=float
+D:\WORK\vsCode\PROJ\GAME_RIYAL\testy.cpp(125,37): warning C4244:         ]
+D:\WORK\vsCode\PROJ\GAME_RIYAL\testy.cpp(126,51): warning C4244: 'argument': conversion from 'int' to 'T', possible loss of data
+D:\WORK\vsCode\PROJ\GAME_RIYAL\testy.cpp(126,51): warning C4244:         with
+D:\WORK\vsCode\PROJ\GAME_RIYAL\testy.cpp(126,51): warning C4244:         [
+D:\WORK\vsCode\PROJ\GAME_RIYAL\testy.cpp(126,51): warning C4244:             T=float
+D:\WORK\vsCode\PROJ\GAME_RIYAL\testy.cpp(126,51): warning C4244:         ]
+D:\WORK\vsCode\PROJ\GAME_RIYAL\testy.cpp(126,38): warning C4244: 'argument': conversion from 'int' to 'T', possible loss of data
+D:\WORK\vsCode\PROJ\GAME_RIYAL\testy.cpp(126,38): warning C4244:         with
+D:\WORK\vsCode\PROJ\GAME_RIYAL\testy.cpp(126,38): warning C4244:         [
+D:\WORK\vsCode\PROJ\GAME_RIYAL\testy.cpp(126,38): warning C4244:             T=float
+D:\WORK\vsCode\PROJ\GAME_RIYAL\testy.cpp(126,38): warning C4244:         ]
+D:\WORK\vsCode\PROJ\GAME_RIYAL\testy.cpp(127,50): warning C4244: 'argument': conversion from 'int' to 'T', possible loss of data
+D:\WORK\vsCode\PROJ\GAME_RIYAL\testy.cpp(127,50): warning C4244:         with
+D:\WORK\vsCode\PROJ\GAME_RIYAL\testy.cpp(127,50): warning C4244:         [
+D:\WORK\vsCode\PROJ\GAME_RIYAL\testy.cpp(127,50): warning C4244:             T=float
+D:\WORK\vsCode\PROJ\GAME_RIYAL\testy.cpp(127,50): warning C4244:         ]
+D:\WORK\vsCode\PROJ\GAME_RIYAL\testy.cpp(127,37): warning C4244: 'argument': conversion from 'int' to 'T', possible loss of data
+D:\WORK\vsCode\PROJ\GAME_RIYAL\testy.cpp(127,37): warning C4244:         with
+D:\WORK\vsCode\PROJ\GAME_RIYAL\testy.cpp(127,37): warning C4244:         [
+D:\WORK\vsCode\PROJ\GAME_RIYAL\testy.cpp(127,37): warning C4244:             T=float
+D:\WORK\vsCode\PROJ\GAME_RIYAL\testy.cpp(127,37): warning C4244:         ]
+D:\WORK\vsCode\PROJ\GAME_RIYAL\testy.cpp(273,43): warning C4267: 'initializing': conversion from 'size_t' to 'unsigned int', possible loss of data
+D:\WORK\vsCode\PROJ\GAME_RIYAL\testy.cpp(273,30): warning C4267: 'initializing': conversion from 'size_t' to 'const unsigned int', possible loss of data
+D:\WORK\vsCode\PROJ\GAME_RIYAL\testy.cpp(415,24): warning C4267: 'initializing': conversion from 'size_t' to 'unsigned int', possible loss of data
+D:\WORK\vsCode\PROJ\GAME_RIYAL\testy.cpp(496,36): warning C4267: 'argument': conversion from 'size_t' to 'int', possible loss of data
+  GAME_RIYAL.vcxproj -> D:\WORK\vsCode\PROJ\x64\Debug\SFML_TEMP.exe
