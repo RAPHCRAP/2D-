@@ -145,8 +145,7 @@ public:
         position += delta;
     }
 
-    Vector3f rotateAroundAxis(const Vector3f& P, const Vector3f& axis, const Vector3f& center, float angleRad)
-    {
+    Vector3f rotateAroundAxis(const Vector3f& P, const Vector3f& axis, const Vector3f& center, float angleRad) const {
         using namespace MathUtils;
 
         Vector3f r = P - center;
@@ -162,43 +161,73 @@ public:
         return center + rotated;
     }
 
-    //void rotateAround(const Vector3f& axis, float angleRad)
-    //{
-    //    using namespace MathUtils;
-
-    //    Vector3f center = getCenter();
-    //    for (auto& P : points) {
-    //        P = rotateAroundAxis(P, axis, center, angleRad);
-    //    }
-
-    //    up = rotateAroundAxis(up, axis, Vector3f(0, 0, 0), angleRad); // up is a direction
-    //}
-
-    void rotateAroundUp(float deltaAngleDegrees, float deltaTime) {
+    void rotateAround(const Vector3f& axis, float angleRad) {
         using namespace MathUtils;
-        float angle = degreesToRadians(deltaAngleDegrees) * deltaTime;
-        forward = rotateAroundAxis(forward, up, Vector3f(0, 0, 0), angle);
+
+        Vector3f origin = Vector3f(0.f, 0.f, 0.f);
+
+        forward = normalize(rotateAroundAxis(forward, axis, origin, angleRad));
+        up = normalize(rotateAroundAxis(up, axis, origin, angleRad));
+    }
+
+    void rotateAroundA(Vector3f worldUp, float deltaAngleDegrees, float deltaTime) {
+        using namespace MathUtils;
+
+        Vector3f axis = worldUp - forward * dot(worldUp, forward);
+        if (length(axis) < 0.001f) {
+            worldUp = Vector3f(1.0f, 0.0f, 0.0f);
+            axis = worldUp - forward * dot(worldUp, forward);
+        }
+
+        axis = normalize(axis);
+        float angleRad = degreesToRadians(deltaAngleDegrees) * deltaTime;
+        rotateAround(axis, angleRad);
+    }
+
+    void rotateAroundY(float deltaAngleDegrees, float deltaTime) {
+        Vector3f Up = Vector3f(0.0f, 1.0f, 0.0f);
+        rotateAroundA(Up, deltaAngleDegrees, deltaTime);
+    }
+
+    void rotateAroundX(float deltaAngleDegrees, float deltaTime) {
+        Vector3f Up = Vector3f(1.0f, 0.0f, 0.0f);
+        rotateAroundA(Up, deltaAngleDegrees, deltaTime);
+    }
+
+    void rotateAroundZ(float deltaAngleDegrees, float deltaTime) {
+        Vector3f Up = Vector3f(0.0f, 0.0f, 1.0f);
+        rotateAroundA(Up, deltaAngleDegrees, deltaTime);
     }
 
     void rotateInPlane(float deltaAngleDegrees, float deltaTime) {
         using namespace MathUtils;
-        float angle = degreesToRadians(deltaAngleDegrees) * deltaTime;
-        Vector3f N = forward;
 
-        Vector3f newRight = rotateAroundAxis(right(), N, Vector3f(0, 0, 0), angle);
-        up = rotateAroundAxis(up, N, Vector3f(0, 0, 0), angle);
+        float angleRad = degreesToRadians(deltaAngleDegrees) * deltaTime;
+        Vector3f axis = forward; 
 
-        // Recalculate forward to ensure orthonormality (optional)
-        forward = normalize(forward);
+        up = normalize(rotateAroundAxis(up, axis, Vector3f(0.f, 0.f, 0.f), angleRad));
     }
 
 
-    void pitch(float deltaAngleDegrees, float deltaTime) {
+    void rotateYawPitch(float deltaYawDeg, float deltaPitchDeg) {
         using namespace MathUtils;
-        float angle = degreesToRadians(deltaAngleDegrees) * deltaTime;
-        Vector3f rightVec = right();
-        forward = rotateAroundAxis(forward, rightVec, Vector3f(0, 0, 0), angle);
-        up = normalize(cross(rightVec, forward));
+
+        // Convert to radians
+        float yawRad = degreesToRadians(deltaYawDeg);
+        float pitchRad = degreesToRadians(deltaPitchDeg);
+
+        // Compute right vector
+        Vector3f right = normalize(cross(forward, up));
+
+        // Rotate forward vector around world up (yaw)
+        forward = normalize(rotateAroundAxis(forward, { 0.f, 1.f, 0.f }, { 0.f, 0.f, 0.f }, yawRad));
+
+        // Recompute right after yaw
+        right = normalize(cross(forward, { 0.f, 1.f, 0.f }));
+
+        // Rotate forward and up around local right axis (pitch)
+        forward = normalize(rotateAroundAxis(forward, right, { 0.f, 0.f, 0.f }, pitchRad));
+        up = normalize(cross(right, forward));
     }
 };
 
@@ -521,7 +550,7 @@ Vector2f projectToScreen2D(const Vector3f& point, const Screen& screen)
 
 
 
-void createFragment(Fragment& fg, Screen* sc, VObject* po, RenderWindow* window) {
+void createOrthogonalFragment(Fragment& fg, Screen* sc, VObject* po, RenderWindow* window) {
     using namespace MathUtils;
     float scale = 1.0f;
 
@@ -536,6 +565,42 @@ void createFragment(Fragment& fg, Screen* sc, VObject* po, RenderWindow* window)
         fg.setPoint(i, px);
         fg.updateShape();
     }
+}
+
+
+Vector2f projectToPerspective2D(const Vector3f& point, const Screen& cam, float focalLength = 500.0f) {
+    using namespace MathUtils;
+
+    Vector3f relative = point - cam.position;
+
+    Vector3f right = normalize(cross(cam.forward, cam.up));
+    Vector3f up = normalize(cam.up);
+
+    float x = dot(relative, right);
+    float y = dot(relative, up);
+    float z = dot(relative, cam.forward);
+
+    if (z <= 0.01f) z = 0.01f; 
+
+    return Vector2f(x * (focalLength / z), y * (focalLength / z));
+}
+
+void createPerspectiveFragment(Fragment& fg, Screen* sc, VObject* po, RenderWindow* window) {
+    using namespace MathUtils;
+
+    Polygon3D* pol = static_cast<Polygon3D*>(po);
+    fg.changeEdges(pol->points.size());
+
+    Vector2f screenCenter = Vector2f(window->getSize()) * 0.5f;
+    float focalLength = 500.0f;
+
+    for (int i = 0; i < fg.points.size(); i++) {
+        Vector2f local = projectToPerspective2D(pol->points[i], *sc, focalLength);
+        Vector2f px = screenCenter + Vector2f(local.x, -local.y);
+        fg.setPoint(i, px);
+    }
+
+    fg.updateShape();
 }
 
 
@@ -591,9 +656,38 @@ int main()
                     }
                 }
 
+
+                static bool firstClick = true;
+                static Vector2i prevMousePos;
+
+                // === Mouse Look Code ===
+                if (Mouse::isButtonPressed(Mouse::Right)) {
+                    Vector2i currentMousePos = Mouse::getPosition(window);
+
+                    if (firstClick) {
+                        prevMousePos = currentMousePos;
+                        firstClick = false;
+                    }
+                    else {
+                        Vector2i delta = currentMousePos - prevMousePos;
+                        prevMousePos = currentMousePos;
+
+                        float sensitivity = 0.1f;
+                        float yaw = delta.x * sensitivity;
+                        float pitch = delta.y * sensitivity;
+
+                        sc->rotateYawPitch(yaw, pitch);
+                    }
+                }
+                else {
+                    firstClick = true;
+                }
+
                 cout << "screen centre:"; display3DVector(sc->getCenter()); 
                 cout << "object up:"; display3DVector(po.points[0]);
 
+
+               
              /*   
                 if (Keyboard::isKeyPressed(Keyboard::W))
                 {
@@ -624,21 +718,6 @@ int main()
 
 
                 */
-
-                if (Keyboard::isKeyPressed(Keyboard::Q))
-                {
-                    po.rotateInPlane(+4.0f, 1.f);
-
-
-                }
-                
-
-                if (Keyboard::isKeyPressed(Keyboard::E))
-                {
-                    po.rotateInPlane(-4.0f, 1.f);
-
-
-                }
 
 
                 
@@ -694,6 +773,9 @@ int main()
 
 
                 }
+
+
+                
         
                 if (Keyboard::isKeyPressed(Keyboard::W))
                 {
@@ -724,36 +806,59 @@ int main()
 
 
 
-
-                //if (Keyboard::isKeyPressed(Keyboard::Q))
+                //if (Keyboard::isKeyPressed(Keyboard::R))
                 //{
-                //              sc->rotateInPlane(+4.0f, 1.f);
+                //    sc->rotateAroundX(+4.0f, 1.f);
+
+
 
                 //}
 
 
-                //if (Keyboard::isKeyPressed(Keyboard::E))
+                //if (Keyboard::isKeyPressed(Keyboard::T))
                 //{
-                //                sc->rotateInPlane(-4.0f, 1.f);
+                //    sc->rotateAroundX(-4.0f, 1.f);
+
 
                 //}
 
 
-               /* if (Keyboard::isKeyPressed(Keyboard::R))
-                {
 
-                            sc->rotateAroundUp(+4.0f, 1.f);
-
-                }
+                //if (Keyboard::isKeyPressed(Keyboard::Y))
+                //{
+                //    sc->rotateAroundY(+4.0f, 1.f);
 
 
-                if (Keyboard::isKeyPressed(Keyboard::T))
-                {
-                                     sc->rotateAroundUp(-4.0f, 1.f);
 
-                }*/
+                //}
 
-                createFragment(p, sc, &po,&window);
+
+                //if (Keyboard::isKeyPressed(Keyboard::U))
+                //{
+                //    sc->rotateAroundY(-4.0f, 1.f);
+
+
+                //}
+
+
+
+                //if (Keyboard::isKeyPressed(Keyboard::I))
+                //{
+                //    sc->rotateAroundZ(+4.0f, 1.f);
+
+
+
+                //}
+
+
+                //if (Keyboard::isKeyPressed(Keyboard::O))
+                //{
+                //    sc->rotateAroundZ(-4.0f, 1.f);
+
+
+                //}
+
+                createPerspectiveFragment(p, sc, &po,&window);
 
                 cout << "fragment : "; display2DVector(p.getCenter());
 
