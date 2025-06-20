@@ -19,6 +19,8 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="FileName.cpp" />
+    <ClCompile Include="GRID TEST.cpp" />
     <ClCompile Include="Polygon.cpp" />
     <ClCompile Include="SOURCE.cpp" />
     <ClCompile Include="Super.cpp" />
@@ -28,6 +30,7 @@
     <ClCompile Include="winObj.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="CDS.h" />
     <ClInclude Include="Polygon.h" />
     <ClInclude Include="Super.h" />
     <ClInclude Include="Window_z.h" />

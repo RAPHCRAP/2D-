@@ -36,6 +36,12 @@
     <ClCompile Include="testy.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="FileName.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="GRID TEST.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Polygon.h">
@@ -48,6 +54,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Window_z.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="CDS.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

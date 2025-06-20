@@ -103,7 +103,7 @@ Polygon::~Polygon()
     clear();
 }
 
-void Polygon::transform(Screen* scr)
+void Polygon::transform(camera* scr)
 {
     for (int i = 0; i < edges; ++i)
     { 

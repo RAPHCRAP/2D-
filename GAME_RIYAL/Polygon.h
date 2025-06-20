@@ -6,7 +6,7 @@
 #include "Super.h"
 
 
-class Screen;
+class camera;
 
 namespace sf
 {
@@ -29,7 +29,7 @@ namespace sf
         void illuminate(const RenderWindow& win, unsigned int intensity = 20);
         void fill();
         void setEdge(size_t e = 4);
-        void transform(Screen* scr);
+        void transform(camera* scr);
         void clear();
 
         ~Polygon();
