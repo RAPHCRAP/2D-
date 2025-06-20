@@ -11,5 +11,6 @@ D:\WORK\vsCode\PROJ\GAME_RIYAL\GRID TEST.cpp(85,55): warning C4244:         [
 D:\WORK\vsCode\PROJ\GAME_RIYAL\GRID TEST.cpp(85,55): warning C4244:             T=float
 D:\WORK\vsCode\PROJ\GAME_RIYAL\GRID TEST.cpp(85,55): warning C4244:         ]
 D:\WORK\vsCode\PROJ\GAME_RIYAL\GRID TEST.cpp(271,36): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-D:\WORK\vsCode\PROJ\GAME_RIYAL\GRID TEST.cpp(413,46): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
+D:\WORK\vsCode\PROJ\GAME_RIYAL\GRID TEST.cpp(552,51): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+D:\WORK\vsCode\PROJ\GAME_RIYAL\GRID TEST.cpp(577,42): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
   GAME_RIYAL.vcxproj -> D:\WORK\vsCode\PROJ\x64\Debug\SFML_TEMP.exe

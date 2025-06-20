@@ -297,6 +297,21 @@ public:
 
 };
 
+float normalToAngleDegrees(const sf::Vector2f& normal) {
+    float angleRadians = std::atan2(normal.y, normal.x);
+    float angleDegrees = angleRadians * 180.f / 3.14159265f;
+
+    // Optional: Normalize to [0, 360)
+    if (angleDegrees < 0)
+        angleDegrees += 360.f;
+
+    return angleDegrees;
+}
+
+float reverseAngle(float angleDegrees) {
+    return std::fmod(angleDegrees + 180.f, 360.f);
+}
+
 // SQL USE / SSMS USE
 // 
 
@@ -369,6 +384,160 @@ void insertIntoSqlServer(const RayNormalRow& row) {
     SQLFreeHandle(SQL_HANDLE_ENV, env);
 }
 
+struct RayAngleRow {
+    float angleDegrees;
+    int orders[9];
+};
+
+void insertIntoRayAngles(const RayAngleRow& row) {
+    SQLHENV env;
+    SQLHDBC dbc;
+    SQLHSTMT stmt;
+    SQLRETURN ret;
+
+    // Allocate environment handle
+    SQLAllocHandle(SQL_HANDLE_ENV, SQL_NULL_HANDLE, &env);
+    SQLSetEnvAttr(env, SQL_ATTR_ODBC_VERSION, (void*)SQL_OV_ODBC3, 0);
+
+    // Allocate connection handle
+    SQLAllocHandle(SQL_HANDLE_DBC, env, &dbc);
+
+    // Unicode connection string
+    SQLWCHAR* connStr = (SQLWCHAR*)
+        L"Driver={SQL Server};Server=DESKTOP-2ALJKCO\\SQLEXPRESS;Database=RayNormalAnalysis;Trusted_Connection=yes;";
+
+    // Connect using Unicode version
+    ret = SQLDriverConnectW(dbc, NULL, connStr, SQL_NTS, NULL, 0, NULL, SQL_DRIVER_COMPLETE);
+    if (!SQL_SUCCEEDED(ret)) {
+        std::cerr << " Connection failed.\n";
+        SQLFreeHandle(SQL_HANDLE_DBC, dbc);
+        SQLFreeHandle(SQL_HANDLE_ENV, env);
+        return;
+    }
+
+    // Allocate statement handle
+    SQLAllocHandle(SQL_HANDLE_STMT, dbc, &stmt);
+
+    // Correct SQL query with exactly 10 placeholders
+    SQLWCHAR* insertQuery = (SQLWCHAR*)
+        L"INSERT INTO RayAngles "
+        L"(AngleDegrees, Order1, Order2, Order3, Order4, Order5, Order6, Order7, Order8, Order9) "
+        L"VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+
+    // Prepare the SQL statement
+    SQLPrepareW(stmt, insertQuery, SQL_NTS);
+
+    // Ensure clean state before reuse
+    SQLFreeStmt(stmt, SQL_CLOSE);
+
+    // Bind angle (1st parameter)
+    SQLBindParameter(stmt, 1, SQL_PARAM_INPUT, SQL_C_FLOAT, SQL_REAL, 0, 0,
+        (SQLPOINTER)&row.angleDegrees, 0, NULL);
+
+    // Bind the 9 order values (parameters 2 to 10)
+    for (int i = 0; i < 9; ++i) {
+        SQLBindParameter(stmt, 2 + i, SQL_PARAM_INPUT, SQL_C_SLONG, SQL_INTEGER, 0, 0,
+            (SQLPOINTER)&row.orders[i], 0, NULL);
+    }
+
+    // Execute the insert
+    ret = SQLExecute(stmt);
+
+    if (!SQL_SUCCEEDED(ret)) {
+        std::cerr << " Insert failed for Angle = " << row.angleDegrees << "\n";
+
+        // Print detailed SQL error
+        SQLWCHAR sqlState[6], message[256];
+        SQLINTEGER nativeError;
+        SQLSMALLINT textLength;
+
+        if (SQLGetDiagRecW(SQL_HANDLE_STMT, stmt, 1, sqlState, &nativeError,
+            message, sizeof(message) / sizeof(SQLWCHAR), &textLength) == SQL_SUCCESS) {
+            std::wcerr << L"  [SQLSTATE " << sqlState << L"] "
+                << message << L" (Error Code: " << nativeError << L")\n";
+        }
+    }
+    else {
+        std::cout << "Row inserted: Angle = " << row.angleDegrees << "\n";
+    }
+
+    // Cleanup
+    SQLFreeStmt(stmt, SQL_RESET_PARAMS);
+    SQLFreeHandle(SQL_HANDLE_STMT, stmt);
+    SQLDisconnect(dbc);
+    SQLFreeHandle(SQL_HANDLE_DBC, dbc);
+    SQLFreeHandle(SQL_HANDLE_ENV, env);
+}
+
+
+//int main() {
+//    sf::RenderWindow window(sf::VideoMode(800, 600), "Ray Orbiting Grid");
+//    window.setFramerateLimit(60);
+//
+//    sf::Font font;
+//    if (!font.loadFromFile("C:/Windows/Fonts/arial.ttf")) {
+//        std::cerr << "Failed to load font!\n";
+//        return -1;
+//    }
+//
+//    Grid grid(3, { 0, 0 }, 1, 50.f);
+//    Ray ray({ 0, std::sqrt(3.f) }, { 0, -1 }, std::sqrt(3.f), grid.getScale());
+//
+//    std::set<std::string> loggedRankPatterns;
+//    std::ofstream logFile("rank_log.txt", std::ios::app);
+//
+//    while (window.isOpen()) {
+//        sf::Event event;
+//        while (window.pollEvent(event)) {
+//            if (event.type == sf::Event::Closed)
+//                window.close();
+//        }
+//
+//        std::ostringstream oss;
+//        oss << "RAYS NORMAL : (" << ray.normal.x << ", " << ray.normal.y << ")  ORDER : { ";
+//        for (int i = 0; i < grid.cells.size(); i++) {
+//            oss << grid.cells[i]->rank << " , ";
+//        }
+//        oss << "}";
+//
+//        std::string entryString = oss.str();
+//        std::cout << entryString;
+//
+//        if (loggedRankPatterns.find(entryString) == loggedRankPatterns.end()) {
+//            loggedRankPatterns.insert(entryString);
+//
+//            RayNormalRow row;
+//            row.normalX = ray.normal.x;
+//            row.normalY = ray.normal.y;
+//
+//            for (int i = 0; i < 9; ++i) {
+//                row.orders[i] = grid.cells[i]->rank;
+//            }
+//
+//            insertIntoSqlServer(row);
+//        }
+//
+//        ray.handleInput();
+//
+//        window.clear(sf::Color::Black);
+//        ray.colorByDistanceToLine(window, grid);
+//        ray.labelCellsByDistanceToLine(window, grid, font);
+//        grid.draw(&window);
+//        ray.draw(window);
+//        window.display();
+//
+//        std::cout << std::endl;
+//    }
+//
+//
+//    return 0;
+//}
+//
+//
+//
+
+
+
 int main() {
     sf::RenderWindow window(sf::VideoMode(800, 600), "Ray Orbiting Grid");
     window.setFramerateLimit(60);
@@ -380,10 +549,7 @@ int main() {
     }
 
     Grid grid(3, { 0, 0 }, 1, 50.f);
-    Ray ray({ 0, std::sqrt(3.f) }, { 0, -1 }, std::sqrt(3.f), grid.getScale());
-
-    std::set<std::string> loggedRankPatterns;
-    std::ofstream logFile("rank_log.txt", std::ios::app);
+    Ray ray({ 0, (float)sqrt(3) }, { 0, -1 }, sqrt(3), grid.getScale()); // starting above origin
 
     while (window.isOpen()) {
         sf::Event event;
@@ -392,53 +558,50 @@ int main() {
                 window.close();
         }
 
-        std::ostringstream oss;
-        oss << "RAYS NORMAL : (" << ray.normal.x << ", " << ray.normal.y << ")  ORDER : { ";
-        for (int i = 0; i < grid.cells.size(); i++) {
-            oss << grid.cells[i]->rank << " , ";
+        std::cout << "RAYS NORMAL :";
+        display2DVector(ray.normal);
+
+        float angle = reverseAngle(normalToAngleDegrees(ray.normal));
+
+        std::cout << " ANGLE : ";
+
+        std::cout << angle;
+
+        std::cout << " ORDER : { ";
+
+        RayAngleRow row;
+        row.angleDegrees = angle;
+
+        for (int i = 0; i < 9; i++) 
+        {
+            row.orders[i] = grid.cells[i]->rank;
+            std::cout << grid.cells[i]->rank << " , ";
         }
-        oss << "}";
 
-        std::string entryString = oss.str();
-        std::cout << entryString;
 
-        if (loggedRankPatterns.find(entryString) == loggedRankPatterns.end()) {
-            loggedRankPatterns.insert(entryString);
+        insertIntoRayAngles(row);
 
-            RayNormalRow row;
-            row.normalX = ray.normal.x;
-            row.normalY = ray.normal.y;
+        std::cout << " }";
 
-            for (int i = 0; i < 9; ++i) {
-                row.orders[i] = grid.cells[i]->rank;
-            }
 
-            insertIntoSqlServer(row);
-        }
 
         ray.handleInput();
 
         window.clear(sf::Color::Black);
         ray.colorByDistanceToLine(window, grid);
+
         ray.labelCellsByDistanceToLine(window, grid, font);
         grid.draw(&window);
         ray.draw(window);
         window.display();
 
+
         std::cout << std::endl;
     }
-
 
     return 0;
 }
 
-
-
-
-
-
-//
-//
 //int main() {
 //    sf::RenderWindow window(sf::VideoMode(800, 600), "Ray Orbiting Grid");
 //    window.setFramerateLimit(60);
