@@ -6,6 +6,11 @@
 #include <cmath>
 
 
+#include <windows.h>
+#include <sqlext.h>
+#include <vector>
+
+
 float perpendicularDistanceToLine(const sf::Vector2f& point, const sf::Vector2f& linePoint, const sf::Vector2f& lineNormal) {
     sf::Vector2f unitNormal = lineNormal;
     float magnitude = std::sqrt(lineNormal.x * lineNormal.x + lineNormal.y * lineNormal.y);
@@ -291,6 +296,148 @@ public:
 
 
 };
+
+// SQL USE / SSMS USE
+// 
+
+struct RayNormalRow {
+    float normalX, normalY;
+    int orders[9];
+};
+
+// Insert a single row into RayNormals
+void insertIntoSqlServer(const RayNormalRow& row) {
+    SQLHENV env;
+    SQLHDBC dbc;
+    SQLHSTMT stmt;
+    SQLRETURN ret;
+
+    // Allocate environment handle
+    SQLAllocHandle(SQL_HANDLE_ENV, SQL_NULL_HANDLE, &env);
+    SQLSetEnvAttr(env, SQL_ATTR_ODBC_VERSION, (void*)SQL_OV_ODBC3, 0);
+
+    // Allocate connection handle
+    SQLAllocHandle(SQL_HANDLE_DBC, env, &dbc);
+
+    // Wide-character connection string
+    SQLWCHAR* connStr = (SQLWCHAR*)
+        L"Driver={SQL Server};Server=DESKTOP-2ALJKCO\\SQLEXPRESS;Database=RayNormalAnalysis;Trusted_Connection=yes;";
+
+    // Connect using Unicode driver
+    ret = SQLDriverConnectW(dbc, NULL, connStr, SQL_NTS, NULL, 0, NULL, SQL_DRIVER_COMPLETE);
+
+    if (!SQL_SUCCEEDED(ret)) {
+        std::cerr << " Connection failed.\n";
+        SQLFreeHandle(SQL_HANDLE_DBC, dbc);
+        SQLFreeHandle(SQL_HANDLE_ENV, env);
+        return;
+    }
+
+    // Allocate statement handle
+    SQLAllocHandle(SQL_HANDLE_STMT, dbc, &stmt);
+
+    // Wide-character insert query
+    SQLWCHAR* insertQuery = (SQLWCHAR*)
+        L"INSERT INTO RayNormals "
+        L"(NormalX, NormalY, Order1, Order2, Order3, Order4, Order5, Order6, Order7, Order8, Order9) "
+        L"VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+
+    SQLPrepareW(stmt, insertQuery, SQL_NTS);
+
+    // Bind float parameters
+    SQLBindParameter(stmt, 1, SQL_PARAM_INPUT, SQL_C_FLOAT, SQL_REAL, 0, 0, (SQLPOINTER)&row.normalX, 0, NULL);
+    SQLBindParameter(stmt, 2, SQL_PARAM_INPUT, SQL_C_FLOAT, SQL_REAL, 0, 0, (SQLPOINTER)&row.normalY, 0, NULL);
+
+    // Bind the 9 integer order parameters
+    for (int i = 0; i < 9; ++i) {
+        SQLBindParameter(stmt, 3 + i, SQL_PARAM_INPUT, SQL_C_SLONG, SQL_INTEGER, 0, 0, (SQLPOINTER)&row.orders[i], 0, NULL);
+    }
+
+    // Execute insert
+    ret = SQLExecute(stmt);
+    if (!SQL_SUCCEEDED(ret)) {
+        std::cerr << " Insert failed for NormalX = " << row.normalX << "\n";
+    }
+    else {
+        std::cout << " Row inserted successfully.\n";
+    }
+
+    // Cleanup
+    SQLFreeHandle(SQL_HANDLE_STMT, stmt);
+    SQLDisconnect(dbc);
+    SQLFreeHandle(SQL_HANDLE_DBC, dbc);
+    SQLFreeHandle(SQL_HANDLE_ENV, env);
+}
+
+int main() {
+    sf::RenderWindow window(sf::VideoMode(800, 600), "Ray Orbiting Grid");
+    window.setFramerateLimit(60);
+
+    sf::Font font;
+    if (!font.loadFromFile("C:/Windows/Fonts/arial.ttf")) {
+        std::cerr << "Failed to load font!\n";
+        return -1;
+    }
+
+    Grid grid(3, { 0, 0 }, 1, 50.f);
+    Ray ray({ 0, std::sqrt(3.f) }, { 0, -1 }, std::sqrt(3.f), grid.getScale());
+
+    std::set<std::string> loggedRankPatterns;
+    std::ofstream logFile("rank_log.txt", std::ios::app);
+
+    while (window.isOpen()) {
+        sf::Event event;
+        while (window.pollEvent(event)) {
+            if (event.type == sf::Event::Closed)
+                window.close();
+        }
+
+        std::ostringstream oss;
+        oss << "RAYS NORMAL : (" << ray.normal.x << ", " << ray.normal.y << ")  ORDER : { ";
+        for (int i = 0; i < grid.cells.size(); i++) {
+            oss << grid.cells[i]->rank << " , ";
+        }
+        oss << "}";
+
+        std::string entryString = oss.str();
+        std::cout << entryString;
+
+        if (loggedRankPatterns.find(entryString) == loggedRankPatterns.end()) {
+            loggedRankPatterns.insert(entryString);
+
+            RayNormalRow row;
+            row.normalX = ray.normal.x;
+            row.normalY = ray.normal.y;
+
+            for (int i = 0; i < 9; ++i) {
+                row.orders[i] = grid.cells[i]->rank;
+            }
+
+            insertIntoSqlServer(row);
+        }
+
+        ray.handleInput();
+
+        window.clear(sf::Color::Black);
+        ray.colorByDistanceToLine(window, grid);
+        ray.labelCellsByDistanceToLine(window, grid, font);
+        grid.draw(&window);
+        ray.draw(window);
+        window.display();
+
+        std::cout << std::endl;
+    }
+
+
+    return 0;
+}
+
+
+
+
+
+
+//
 //
 //int main() {
 //    sf::RenderWindow window(sf::VideoMode(800, 600), "Ray Orbiting Grid");
@@ -344,56 +491,60 @@ public:
 //
 //    return 0;
 //}
+//
 
-int main() {
-    sf::RenderWindow window(sf::VideoMode(800, 600), "Ray Orbiting Grid");
-    window.setFramerateLimit(60);
 
-    sf::Font font;
-    if (!font.loadFromFile("C:/Windows/Fonts/arial.ttf")) {
-        std::cerr << "Failed to load font!\n";
-        return -1;
-    }
-
-    Grid grid(3, { 0, 0 }, 1, 50.f);
-    Ray ray({ 0, std::sqrt(3.f) }, { 0, -1 }, std::sqrt(3.f), grid.getScale());
-
-    std::set<std::string> loggedOrders;
-    std::ofstream logFile("permutation_log.txt", std::ios::app);
-
-    while (window.isOpen()) {
-        sf::Event event;
-        while (window.pollEvent(event)) {
-            if (event.type == sf::Event::Closed)
-                window.close();
-        }
-
-        std::ostringstream orderOnly;
-        orderOnly << "ORDER : { ";
-        for (int i = 0; i < grid.cells.size(); i++) {
-            orderOnly << grid.cells[i]->rank << " , ";
-        }
-        orderOnly << "}";
-
-        std::string orderStr = orderOnly.str();
-        std::cout << orderStr;
-
-        if (loggedOrders.find(orderStr) == loggedOrders.end()) {
-            logFile << orderStr << "\n";
-            loggedOrders.insert(orderStr);
-        }
-
-        ray.handleInput();
-
-        window.clear(sf::Color::Black);
-        ray.colorByDistanceToLine(window, grid);
-        ray.labelCellsByDistanceToLine(window, grid, font);
-        grid.draw(&window);
-        ray.draw(window);
-        window.display();
-
-        std::cout << std::endl;
-    }
-
-    return 0;
-}
+//
+//int main() 
+//{
+//    sf::RenderWindow window(sf::VideoMode(800, 600), "Ray Orbiting Grid");
+//    window.setFramerateLimit(60);
+//
+//    sf::Font font;
+//    if (!font.loadFromFile("C:/Windows/Fonts/arial.ttf")) {
+//        std::cerr << "Failed to load font!\n";
+//        return -1;
+//    }
+//
+//    Grid grid(3, { 0, 0 }, 1, 50.f);
+//    Ray ray({ 0, std::sqrt(3.f) }, { 0, -1 }, std::sqrt(3.f), grid.getScale());
+//
+//    std::set<std::string> loggedOrders;
+//    std::ofstream logFile("permutation_log.txt", std::ios::app);
+//
+//    while (window.isOpen()) {
+//        sf::Event event;
+//        while (window.pollEvent(event)) {
+//            if (event.type == sf::Event::Closed)
+//                window.close();
+//        }
+//
+//        std::ostringstream orderOnly;
+//        orderOnly << "ORDER : { ";
+//        for (int i = 0; i < grid.cells.size(); i++) {
+//            orderOnly << grid.cells[i]->rank << " , ";
+//        }
+//        orderOnly << "}";
+//
+//        std::string orderStr = orderOnly.str();
+//        std::cout << orderStr;
+//
+//        if (loggedOrders.find(orderStr) == loggedOrders.end()) {
+//            logFile << orderStr << "\n";
+//            loggedOrders.insert(orderStr);
+//        }
+//
+//        ray.handleInput();
+//
+//        window.clear(sf::Color::Black);
+//        ray.colorByDistanceToLine(window, grid);
+//        ray.labelCellsByDistanceToLine(window, grid, font);
+//        grid.draw(&window);
+//        ray.draw(window);
+//        window.display();
+//
+//        std::cout << std::endl;
+//    }
+//
+//    return 0;
+//}
