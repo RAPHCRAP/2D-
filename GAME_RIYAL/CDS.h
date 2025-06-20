@@ -1200,27 +1200,30 @@ public:
     }
 };
 
+
+template <typename T, typename U>
 class AVL
 {
-private:
+public:
     struct Node
     {
-        int key;
+        T key;
+        U data;
         int height;
         Node* left;
         Node* right;
 
-        Node(int k) : key(k), height(1), left(nullptr), right(nullptr) {}
+        Node(const T& k, const U& d) : key(k), data(d), height(1), left(nullptr), right(nullptr) {}
     };
 
     Node* root;
 
-    int getHeight(Node* node)
+    int getHeight(Node* node) const
     {
         return node ? node->height : 0;
     }
 
-    int getBalance(Node* node)
+    int getBalance(Node* node) const
     {
         return node ? getHeight(node->left) - getHeight(node->right) : 0;
     }
@@ -1233,8 +1236,8 @@ private:
         x->right = y;
         y->left = T2;
 
-        y->height = max(getHeight(y->left), getHeight(y->right)) + 1;
-        x->height = max(getHeight(x->left), getHeight(x->right)) + 1;
+        y->height = std::max(getHeight(y->left), getHeight(y->right)) + 1;
+        x->height = std::max(getHeight(x->left), getHeight(x->right)) + 1;
 
         return x;
     }
@@ -1247,40 +1250,48 @@ private:
         y->left = x;
         x->right = T2;
 
-        x->height = max(getHeight(x->left), getHeight(x->right)) + 1;
-        y->height = max(getHeight(y->left), getHeight(y->right)) + 1;
+        x->height = std::max(getHeight(x->left), getHeight(x->right)) + 1;
+        y->height = std::max(getHeight(y->left), getHeight(y->right)) + 1;
 
         return y;
     }
 
-    Node* insert(Node* node, int key)
+    Node* insert(Node* node, const T& key, const U& data)
     {
         if (!node)
-            return new Node(key);
+            return new Node(key, data);
 
         if (key < node->key)
-            node->left = insert(node->left, key);
+            node->left = insert(node->left, key, data);
         else if (key > node->key)
-            node->right = insert(node->right, key);
+            node->right = insert(node->right, key, data);
         else
+        {
+            // Key already exists, update data
+            node->data = data;
             return node;
+        }
 
-        node->height = max(getHeight(node->left), getHeight(node->right)) + 1;
+        node->height = std::max(getHeight(node->left), getHeight(node->right)) + 1;
 
         int balance = getBalance(node);
 
+        // Left Left Case
         if (balance > 1 && key < node->left->key)
             return rightRotate(node);
 
+        // Right Right Case
         if (balance < -1 && key > node->right->key)
             return leftRotate(node);
 
+        // Left Right Case
         if (balance > 1 && key > node->left->key)
         {
             node->left = leftRotate(node->left);
             return rightRotate(node);
         }
 
+        // Right Left Case
         if (balance < -1 && key < node->right->key)
         {
             node->right = rightRotate(node->right);
@@ -1290,15 +1301,15 @@ private:
         return node;
     }
 
-    Node* minValueNode(Node* node)
+    Node* minValueNode(Node* node) const
     {
         Node* current = node;
-        while (current->left)
+        while (current && current->left)
             current = current->left;
         return current;
     }
 
-    Node* deleteNode(Node* root, int key)
+    Node* deleteNode(Node* root, const T& key)
     {
         if (!root)
             return root;
@@ -1326,9 +1337,8 @@ private:
             else
             {
                 Node* temp = minValueNode(root->right);
-
                 root->key = temp->key;
-
+                root->data = temp->data;
                 root->right = deleteNode(root->right, temp->key);
             }
         }
@@ -1336,36 +1346,31 @@ private:
         if (!root)
             return root;
 
-        root->height = max(getHeight(root->left), getHeight(root->right)) + 1;
+        root->height = std::max(getHeight(root->left), getHeight(root->right)) + 1;
 
         int balance = getBalance(root);
 
-        // Case 1: Left-Left (LL) Imbalance
-
+        // Left Left Case
         if (balance > 1 && getBalance(root->left) >= 0)
             return rightRotate(root);
 
-        // Case 2: Left-Right (LR) Imbalance
-
+        // Left Right Case
         if (balance > 1 && getBalance(root->left) < 0)
         {
             root->left = leftRotate(root->left);
             return rightRotate(root);
         }
 
-        // Case 3: Right-Right (RR) Imbalance
-
+        // Right Right Case
         if (balance < -1 && getBalance(root->right) <= 0)
             return leftRotate(root);
 
-        // Case 4: Right-Left (RL) Imbalance
-
+        // Right Left Case
         if (balance < -1 && getBalance(root->right) > 0)
         {
             root->right = rightRotate(root->right);
             return leftRotate(root);
         }
-
 
         return root;
     }
@@ -1379,11 +1384,11 @@ private:
         delete node;
     }
 
-    Node* copyTree(Node* other)
+    Node* copyTree(Node* other) const
     {
         if (!other)
             return nullptr;
-        Node* newNode = new Node(other->key);
+        Node* newNode = new Node(other->key, other->data);
         newNode->left = copyTree(other->left);
         newNode->right = copyTree(other->right);
         newNode->height = other->height;
@@ -1395,8 +1400,20 @@ private:
         if (!node)
             return;
         printInOrder(node->left);
-        cout << node->key << " ";
+        std::cout << "Key: " << node->key << ", Data: " << node->data << std::endl;
         printInOrder(node->right);
+    }
+
+    Node* find(Node* node, const T& key) const
+    {
+        if (!node)
+            return nullptr;
+        if (key < node->key)
+            return find(node->left, key);
+        else if (key > node->key)
+            return find(node->right, key);
+        else
+            return node;
     }
 
 public:
@@ -1412,14 +1429,17 @@ public:
         clear();
     }
 
-    void insert(int key)
+    void insert(const T& key, const U& data)
     {
-        root = insert(root, key);
+        root = insert(root, key, data);
     }
 
-    void remove(int key)
+    bool remove(const T& key)
     {
+        if (!contains(key))
+            return false;
         root = deleteNode(root, key);
+        return true;
     }
 
     void clear()
@@ -1433,81 +1453,38 @@ public:
         return root == nullptr;
     }
 
-
-    size_t height()
+    size_t height() const
     {
         return getHeight(root);
     }
 
-    void print()
+    bool contains(const T& key) const
     {
-
-        cout << endl << endl;
-
-        if (isEmpty())
-        {
-            return;
-        }
-
-        Queue<Node*> q;
-
-        q.enqueue(root);
-
-        Node* curr;
-
-        int TH = height();
-        TH--;
-
-        for (int i = 0; i <= TH; i++)
-        {
-
-            for (int sp = 0; sp < pow(2, TH - i) - 1; sp++)
-            {
-                cout << string(1, ' ');
-            }
-
-            for (int l = 0; l < pow(2, i); l++)
-            {
-
-
-                q.dequeue(curr);
-
-
-
-                if (curr)
-                {
-                    cout << curr;
-
-                    q.enqueue(curr->left);
-                    q.enqueue(curr->right);
-                }
-                else
-                {
-                    cout << string(1, '_');
-
-                    q.enqueue(nullptr);
-                    q.enqueue(nullptr);
-                }
-
-                for (int sp = 0; sp < pow(2, TH - i + 1) - 1; sp++)
-                {
-                    cout << string(1, ' ');
-                }
-            }
-
-            cout << endl;
-        }
-
-        cout << endl << endl;
+        return find(root, key) != nullptr;
     }
 
+    U& get(const T& key)
+    {
+        Node* node = find(root, key);
+        if (!node)
+            throw std::out_of_range("Key not found");
+        return node->data;
+    }
+
+    const U& get(const T& key) const
+    {
+        Node* node = find(root, key);
+        if (!node)
+            throw std::out_of_range("Key not found");
+        return node->data;
+    }
 
     void displayInOrder() const
     {
         printInOrder(root);
-        cout << endl;
     }
 };
+
 
 template <typename T>
 class minHeap

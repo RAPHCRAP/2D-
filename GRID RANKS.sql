@@ -148,18 +148,7 @@ ORDER BY
 
 
 
--- Delete records where any order column has value around -431,602,000
-DELETE FROM RayNormals
-WHERE 
-    Order1 BETWEEN -431700000 AND -431500000 OR
-    Order2 BETWEEN -431700000 AND -431500000 OR
-    Order3 BETWEEN -431700000 AND -431500000 OR
-    Order4 BETWEEN -431700000 AND -431500000 OR
-    Order5 BETWEEN -431700000 AND -431500000 OR
-    Order6 BETWEEN -431700000 AND -431500000 OR
-    Order7 BETWEEN -431700000 AND -431500000 OR
-    Order8 BETWEEN -431700000 AND -431500000 OR
-    Order9 BETWEEN -431700000 AND -431500000;
+
 
 SELECT * FROM RayNormals;
 
@@ -194,8 +183,55 @@ CREATE TABLE RayAngles (
     NormalY AS (SIN(RADIANS(AngleDegrees))) PERSISTED
 );
 
+-- Delete records where any order column has value around -431,602,000
+DELETE FROM RayAngles
+WHERE 
+    Order1 BETWEEN -431700000 AND -431500000 OR
+    Order2 BETWEEN -431700000 AND -431500000 OR
+    Order3 BETWEEN -431700000 AND -431500000 OR
+    Order4 BETWEEN -431700000 AND -431500000 OR
+    Order5 BETWEEN -431700000 AND -431500000 OR
+    Order6 BETWEEN -431700000 AND -431500000 OR
+    Order7 BETWEEN -431700000 AND -431500000 OR
+    Order8 BETWEEN -431700000 AND -431500000 OR
+    Order9 BETWEEN -431700000 AND -431500000;
+
 -- Create an index on the permutation hash for faster grouping
 CREATE INDEX IX_RayAngles_PermutationHash ON RayAngles(PermutationHash);
 
 -- Optional index on the angle itself if you'll query by angle ranges
 CREATE INDEX IX_RayAngles_AngleDegrees ON RayAngles(AngleDegrees);
+
+
+INSERT INTO RayAngles (AngleDegrees, Order1, Order2, Order3, Order4, Order5, Order6, Order7, Order8, Order9)
+VALUES 
+    (45.0, 1, 2, 3, 3, 4, 5, 4, 6, 7),
+    (30.0, 1, 2, 3, 3, 4, 5, 5, 6, 6);
+
+
+
+	DELETE RayAngles
+	WHERE 1=1;
+
+	SELECT * FROM RayAngles;
+
+
+
+
+
+	-- Query to get min/max angle values for each order permutation, ordered by min angle
+SELECT 
+    PermutationHash,
+    Order1, Order2, Order3, Order4, Order5, Order6, Order7, Order8, Order9,
+    MIN(AngleDegrees) AS MinAngleDegrees,
+    MAX(AngleDegrees) AS MaxAngleDegrees,
+    COUNT(*) AS RecordCount,
+    MAX(AngleDegrees) - MIN(AngleDegrees) AS AngleRange,
+    AVG(AngleDegrees) AS AvgAngleDegrees
+FROM 
+    RayAngles
+GROUP BY 
+    PermutationHash,
+    Order1, Order2, Order3, Order4, Order5, Order6, Order7, Order8, Order9
+ORDER BY 
+    MIN(AngleDegrees);  -- Primary sort by minimum angle
