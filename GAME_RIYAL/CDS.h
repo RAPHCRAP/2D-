@@ -407,27 +407,23 @@ public:
 
     ~Stack() {}
 
-    void push(T e)
-    {
-        ++size;
-        list.append(e);
-    }
-
     bool isEmpty()
     {
         return size == 0;
     }
 
 
-    T pop()
-    {
-        if (isEmpty())
-        {
-            return T();
-        }
-        --size;
-        return list.remove();
+    void push(T e) {
+        ++size;
+        list.append(e);  
     }
+
+    T pop() {
+        if (isEmpty()) return T();
+        --size;
+        return list.erase(); 
+    }
+
 
     T peek()
     {
@@ -1228,13 +1224,84 @@ public:
         return node ? getHeight(node->left) - getHeight(node->right) : 0;
     }
 
-    Node* rightRotate(Node* y)
+    void print()
     {
+
+        cout << endl << endl;
+
+        if (isEmpty())
+        {
+            return;
+        }
+
+        Queue<Node*> q;
+
+        q.enqueue(root);
+
+        Node* curr;
+
+        int TH = height();
+        TH--;
+
+        for (int i = 0; i <= TH; i++)
+        {
+
+            for (int sp = 0; sp < pow(2, TH - i) - 1; sp++)
+            {
+                cout << string(1, ' ');
+            }
+
+            for (int l = 0; l < pow(2, i); l++)
+            {
+
+
+                q.dequeue(curr);
+
+
+
+                if (curr)
+                {
+                    cout << curr->key;
+
+                    q.enqueue(curr->left);
+                    q.enqueue(curr->right);
+                }
+                else
+                {
+                    cout << string(1, '_');
+
+                    q.enqueue(nullptr);
+                    q.enqueue(nullptr);
+                }
+
+                for (int sp = 0; sp < pow(2, TH - i + 1) - 1; sp++)
+                {
+                    cout << string(1, ' ');
+                }
+            }
+
+            cout << endl;
+        }
+
+        cout << endl << endl;
+    }
+
+ 
+
+    Node* rightRotate(Node* y) {
+        if (!y || !y->left) return y;  //  prevent nullptr bugs
+
+
+     
+
         Node* x = y->left;
         Node* T2 = x->right;
 
         x->right = y;
         y->left = T2;
+
+        std::cout << "[RIGHT ROTATE] at " << y->key << "\n";
+        std::cout << "[LEFT ROTATE] at " << x->key << "\n";
 
         y->height = std::max(getHeight(y->left), getHeight(y->right)) + 1;
         x->height = std::max(getHeight(x->left), getHeight(x->right)) + 1;
@@ -1242,10 +1309,19 @@ public:
         return x;
     }
 
-    Node* leftRotate(Node* x)
-    {
+
+
+    Node* leftRotate(Node* x) {
+        if (!x || !x->right) return x;  // prevent nullptr bugs
+
+ 
+
+
         Node* y = x->right;
         Node* T2 = y->left;
+
+        std::cout << "[RIGHT ROTATE] at " << y->key << "\n";
+        std::cout << "[LEFT ROTATE] at " << x->key << "\n";
 
         y->left = x;
         x->right = T2;
@@ -1256,25 +1332,40 @@ public:
         return y;
     }
 
-    Node* insert(Node* node, const T& key, const U& data)
-    {
+
+
+    Node* insert(Node* node, const T& key, const U& data) {
+       
+
+
         if (!node)
             return new Node(key, data);
 
-        if (key < node->key)
+        if (key < node->key) {
+            std::cout << "[INSERT] " << key << " < " << node->key << "  going LEFT\n";
             node->left = insert(node->left, key, data);
-        else if (key > node->key)
+        }
+        else if (key > node->key) {
+            std::cout << "[INSERT] " << key << " > " << node->key << "  going RIGHT\n";
             node->right = insert(node->right, key, data);
-        else
-        {
-            // Key already exists, update data
+        }
+        else {
+            std::cout << "[INSERT] " << key << " == " << node->key << "  updating node\n";
             node->data = data;
-            return node;
         }
 
+        // Update height
         node->height = std::max(getHeight(node->left), getHeight(node->right)) + 1;
 
+        // Get balance factor
         int balance = getBalance(node);
+
+        std::cout << "[INSERT] Key: " << key
+            << ", Node: " << node->key
+            << ", Balance: " << balance << "\n";
+
+        //// DEBUG LOGGING
+        //std::cout << "[BALANCE] Key = " << node->key << ", Balance = " << balance << "\n";
 
         // Left Left Case
         if (balance > 1 && key < node->left->key)
@@ -1285,15 +1376,13 @@ public:
             return leftRotate(node);
 
         // Left Right Case
-        if (balance > 1 && key > node->left->key)
-        {
+        if (balance > 1 && key > node->left->key) {
             node->left = leftRotate(node->left);
             return rightRotate(node);
         }
 
         // Right Left Case
-        if (balance < -1 && key < node->right->key)
-        {
+        if (balance < -1 && key < node->right->key) {
             node->right = rightRotate(node->right);
             return leftRotate(node);
         }
@@ -1301,52 +1390,13 @@ public:
         return node;
     }
 
-    Node* minValueNode(Node* node) const
-    {
-        Node* current = node;
-        while (current && current->left)
-            current = current->left;
-        return current;
-    }
 
     Node* deleteNode(Node* root, const T& key)
     {
-        if (!root)
-            return root;
+        // ... (existing deletion code until height update)
 
-        if (key < root->key)
-            root->left = deleteNode(root->left, key);
-        else if (key > root->key)
-            root->right = deleteNode(root->right, key);
-        else
-        {
-            if (!root->left || !root->right)
-            {
-                Node* temp = root->left ? root->left : root->right;
-
-                if (!temp)
-                {
-                    temp = root;
-                    root = nullptr;
-                }
-                else
-                    *root = *temp;
-
-                delete temp;
-            }
-            else
-            {
-                Node* temp = minValueNode(root->right);
-                root->key = temp->key;
-                root->data = temp->data;
-                root->right = deleteNode(root->right, temp->key);
-            }
-        }
-
-        if (!root)
-            return root;
-
-        root->height = std::max(getHeight(root->left), getHeight(root->right)) + 1;
+        // Update height
+        root->height = 1 + std::max(getHeight(root->left), getHeight(root->right));
 
         int balance = getBalance(root);
 
@@ -1374,6 +1424,16 @@ public:
 
         return root;
     }
+
+    Node* minValueNode(Node* node) const
+    {
+        Node* current = node;
+        while (current && current->left)
+            current = current->left;
+        return current;
+    }
+
+    
 
     void clear(Node* node)
     {
@@ -1482,6 +1542,25 @@ public:
     void displayInOrder() const
     {
         printInOrder(root);
+    }
+
+    void printTree(Node* node, int indent = 0) const {
+        if (!node) return;
+
+        for (int i = 0; i < indent; ++i) std::cout << "   ";
+        std::cout << node->key << "\n";
+
+        if (node->left || node->right) {
+            printTree(node->left, indent + 1);
+            printTree(node->right, indent + 1);
+        }
+    }
+
+
+    void displayTree() const {
+        std::cout << "=== TREE STRUCTURE ===\n";
+        printTree(root);
+        std::cout << "======================\n";
     }
 };
 

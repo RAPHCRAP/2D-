@@ -42,6 +42,9 @@
     <ClCompile Include="GRID TEST.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="TESTINGCSD.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Polygon.h">

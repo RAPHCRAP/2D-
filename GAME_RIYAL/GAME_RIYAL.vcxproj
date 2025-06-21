@@ -25,6 +25,7 @@
     <ClCompile Include="SOURCE.cpp" />
     <ClCompile Include="Super.cpp" />
     <ClCompile Include="test.cpp" />
+    <ClCompile Include="TESTINGCSD.cpp" />
     <ClCompile Include="testy.cpp" />
     <ClCompile Include="Window_z.cpp" />
     <ClCompile Include="winObj.cpp" />

@@ -316,6 +316,8 @@ public:
     // Member variables
     VertexArray shape;
     bool filled = false;
+    sf::Color clr;
+    
     vector<Vector2f> points;
 
     VObject* subject;
@@ -325,6 +327,8 @@ public:
         points(pointCount),
         shape(filled ? TriangleFan : LineStrip, pointCount + (filled ? 0 : 1))
     {
+
+        clr = Color(255, 255, 255);
     }
 
 
@@ -427,18 +431,15 @@ public:
     void updateShape() {
         shape.clear();
         for (const auto& point : points) {
-            shape.append({ point, Color::White });
+            shape.append({ point, clr });
         }
 
         // Close the loop if not filled
         if (!filled && !points.empty()) {
-            shape.append({ points[0], Color::White });
+            shape.append({ points[0], clr});
         }
     }
 };
-
-
-
 
 
 // ==================== VOBJECT HIERARCHY ====================
@@ -460,15 +461,35 @@ public:
     virtual void rotateAroundX(float deltaAngleDegrees, float deltaTime) = 0;
     virtual void rotateAroundZ(float deltaAngleDegrees, float deltaTime) = 0;
     virtual void rotateInPlane(float deltaAngleDegrees, float deltaTime) = 0;
+    virtual void fill() = 0;
+    virtual void outline() = 0;
+    virtual void setColor(const sf::Color& col) = 0;
+    virtual void setPosition(const Vector3f& newPos) = 0;
+
+
 };
 
 class Polygon3D : public VObject {
 public:
     vector<Vector3f> points;
     bool filled = false;
+    sf::Color rgb;
+
 
     void prespectiveProject(Fragment* frag, Vector3f position, Vector3f forward, Vector3f up, Vector2f winSize, float focalLength = 500.f) override {
         using namespace MathUtils;
+
+        if (filled)
+        {
+            frag->fill();
+        }
+        else
+        {
+            frag->outline();
+        }
+        
+
+        frag->clr = rgb;
 
         frag->changeEdges(this->points.size());
         Vector2f screenCenter = winSize * 0.5f;
@@ -483,6 +504,21 @@ public:
 
     void orthogonalProject(Fragment* frag, Vector3f centre, Vector3f up, Vector3f right, Vector2f winSize, float scale = 1.f) override {
         using namespace MathUtils;
+
+        if (filled)
+        {
+            frag->fill();
+        }
+        else
+        {
+            frag->outline();
+        }
+
+
+        frag->clr = rgb;
+
+
+
         frag->changeEdges(this->points.size());
         Vector2f screenCenter = winSize * 0.5f;
 
@@ -493,11 +529,24 @@ public:
             frag->updateShape();
         }
     }
-
-    explicit Polygon3D(size_t pointCount) : points(pointCount) {
+   
+    explicit Polygon3D(size_t pointCount)
+        : points(pointCount), rgb(255, 255, 255) // Default white
+    {
         rounded();
         up = getPlaneNormal();
     }
+
+    void setColor(const sf::Color& col) 
+    {
+        rgb = col;
+    }
+
+    void setPosition(const Vector3f& newPos) {
+        Vector3f delta = newPos - getCenter();
+        move(delta);
+    }
+
 
     void setPoint(size_t index, const Vector3f& point) {
         assert(index < points.size());
@@ -756,28 +805,39 @@ public:
         }
     }
 
-    void render() {
+    void render() 
+    {
         using namespace MathUtils;
 
         if (!worldSpace) return;
 
         AVL<float, Fragment*> tree;
 
+        int i = 1;
 
         for (auto& frag : fragments) {
             frag->subject->prespectiveProject(frag, cam->position, cam->forward,
                 cam->up, Vector2f(window->getSize()),
                 cam->focalLength);
 
+            
 
             if (isInFrontOfDirectedPlane(frag->subject->getPosition(),
                 cam->position, cam->forward)) {
 
                 float distance = distanceToPlane(frag->subject->getPosition(),
                     cam->position, cam->forward);
+
+              
+
+                
                 tree.insert(distance, frag);
             }
+
+ 
         }
+
+        tree.print();
 
 
         if (!tree.isEmpty()) {
@@ -787,22 +847,22 @@ public:
             typename AVL<float, Fragment*>::Node* current = tree.root;
 
             while (current || !nodeStack.isEmpty()) {
-        
                 while (current) {
                     nodeStack.push(current);
-                    current = current->left;
+                    current = current->right;
                 }
 
+                
 
                 current = nodeStack.pop();
 
+          
 
                 window->draw(*(current->data));
-
-               
-                current = current->right;
+                current = current->left;     
             }
         }
+
     }
 
 
@@ -837,16 +897,31 @@ int main()
 
     viewWindow windov(VideoMode(800, 600), "HELLO 2");
 
-    VObject* pol = new Polygon3D(6);
+    VObject* pol = new Polygon3D(60);
+    pol->fill();
+
+    pol->setColor(Color(255,0,0));
+
+    
+
+    VObject* pov = new Polygon3D(60);
+
+    pov->fill();
+
+    pov->setColor(Color(0, 255, 0));
+
+
+    
     
 
     ws.addObject(pol);
+    ws.addObject(pov);
 
     window.attachWorldSpace(&ws);
     windov.attachWorldSpace(&ws);
 
 
-
+    pol->fill();
 
     float moveSpeed = 4.f;
 
@@ -868,11 +943,12 @@ int main()
                     // Zoom with mouse wheel
                     if (event.type == Event::MouseWheelScrolled) {
                         float zoom = event.mouseWheelScroll.delta * 10.0f;
-                        window.cam->move({ 0, 0, zoom });
-                    /*    po.move({ 0, 0, zoom });*/
+                        /*window.cam->move({ 0, 0, zoom });*/
+                        pov->move({ 0, 0, zoom });
                     }
                 }
 
+                
 
                 //static bool firstClick = true;
                 //static Vector2i prevMousePos;
@@ -900,8 +976,9 @@ int main()
                 //    firstClick = true;
                 //}
 
-                cout << "screen centre:"; display3DVector(window.cam->position); 
-                cout << "object up:"; display3DVector(pol->getPosition());
+                /*cout << "screen centre:"; display3DVector(window.cam->position); 
+                cout << "object 1:"; display3DVector(pol->getPosition());
+                cout << "object 2:"; display3DVector(pov->getPosition());*/
 
 
                
@@ -993,7 +1070,7 @@ int main()
                 
 
                 
-        
+        /*
                 if (Keyboard::isKeyPressed(Keyboard::W))
                 {
    
@@ -1019,8 +1096,37 @@ int main()
  
                     window.cam->move({ moveSpeed, 0, 0 });
 
+                }*/
+
+
+
+
+                if (Keyboard::isKeyPressed(Keyboard::W))
+                {
+
+                    pov->move({ 0, -moveSpeed, 0 });
+
+
+                }
+                if (Keyboard::isKeyPressed(Keyboard::S))
+                {
+
+                    pov->move({ 0, moveSpeed, 0 });
+
                 }
 
+                if (Keyboard::isKeyPressed(Keyboard::A))
+                {
+
+                    pov->move({ -moveSpeed, 0, 0 });
+
+                }
+                if (Keyboard::isKeyPressed(Keyboard::D))
+                {
+
+                    pov->move({ moveSpeed, 0, 0 });
+
+                }
 
 
                 //if (Keyboard::isKeyPressed(Keyboard::R))
@@ -1080,17 +1186,19 @@ int main()
                 //cout << "fragment : "; display2DVector(p.getCenter());
 
 
-                cout << endl;
+                
 
-                windov.window->clear();
+          /*      windov.window->clear();*/
         window.window->clear();
 
         window.render();
-        windov.render();
+        /*windov.render();*/
         
         window.window->display();
-        windov.window->display();
+        /*windov.windov->display();*/
         
+        cout << endl;
+
     }
 
 
