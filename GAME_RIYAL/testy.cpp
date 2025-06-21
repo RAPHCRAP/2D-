@@ -444,7 +444,6 @@ public:
 // ==================== VOBJECT HIERARCHY ====================
 class VObject {
 public:
-
     Vector3f up;
     virtual ~VObject() = default;
 
@@ -453,44 +452,41 @@ public:
     virtual void prespectiveProject(Fragment* frag, Vector3f position, Vector3f forward, Vector3f up, Vector2f winSize, float focalLength = 500.f) = 0;
     virtual void orthogonalProject(Fragment* frag, Vector3f centre, Vector3f up, Vector3f right, Vector2f winSize, float scale = 1.f) = 0;
 
-};
 
+    virtual void move(const Vector3f& delta) = 0;
+    virtual void rotateAround(const Vector3f& axis, float angleRad) = 0;
+    virtual void rotateAroundA(Vector3f worldUp, float deltaAngleDegrees, float deltaTime) = 0;
+    virtual void rotateAroundY(float deltaAngleDegrees, float deltaTime) = 0;
+    virtual void rotateAroundX(float deltaAngleDegrees, float deltaTime) = 0;
+    virtual void rotateAroundZ(float deltaAngleDegrees, float deltaTime) = 0;
+    virtual void rotateInPlane(float deltaAngleDegrees, float deltaTime) = 0;
+};
 
 class Polygon3D : public VObject {
 public:
     vector<Vector3f> points;
     bool filled = false;
 
-
-    void prespectiveProject(Fragment* frag, Vector3f position, Vector3f forward, Vector3f up, Vector2f winSize,float focalLength = 500.f) override
-    {
+    void prespectiveProject(Fragment* frag, Vector3f position, Vector3f forward, Vector3f up, Vector2f winSize, float focalLength = 500.f) override {
         using namespace MathUtils;
 
-        
         frag->changeEdges(this->points.size());
-
         Vector2f screenCenter = winSize * 0.5f;
 
         for (int i = 0; i < frag->points.size(); i++) {
-            Vector2f local = projectToPerspective2D(this->points[i], position,forward,up, focalLength);
+            Vector2f local = projectToPerspective2D(this->points[i], position, forward, up, focalLength);
             Vector2f px = screenCenter + Vector2f(local.x, -local.y);
             frag->setPoint(i, px);
         }
-
         frag->updateShape();
     }
 
-    void orthogonalProject(Fragment* frag,Vector3f centre,Vector3f up, Vector3f right, Vector2f winSize ,float scale = 1.f ) override
-    {
+    void orthogonalProject(Fragment* frag, Vector3f centre, Vector3f up, Vector3f right, Vector2f winSize, float scale = 1.f) override {
         using namespace MathUtils;
-
-
         frag->changeEdges(this->points.size());
-
         Vector2f screenCenter = winSize * 0.5f;
 
-        for (int i = 0; i < frag->points.size(); i++) 
-        {
+        for (int i = 0; i < frag->points.size(); i++) {
             Vector2f local = projectToScreen2D(this->points[i], centre, up, right);
             Vector2f px = screenCenter + Vector2f(local.x, -local.y) * scale;
             frag->setPoint(i, px);
@@ -500,9 +496,7 @@ public:
 
     explicit Polygon3D(size_t pointCount) : points(pointCount) {
         rounded();
-        up = getPlaneNormal(); 
-
-
+        up = getPlaneNormal();
     }
 
     void setPoint(size_t index, const Vector3f& point) {
@@ -510,7 +504,7 @@ public:
         points[index] = point;
     }
 
-    void move(const Vector3f& delta) {
+    void move(const Vector3f& delta) override {
         for (auto& v : points) {
             v += delta;
         }
@@ -519,9 +513,7 @@ public:
     void fill() { filled = true; }
     void outline() { filled = false; }
 
-
-    Vector3f getPosition() override
-    {
+    Vector3f getPosition() override {
         return getCenter();
     }
 
@@ -562,8 +554,7 @@ public:
                 0.0f
             ));
         }
-
-        up = getPlaneNormal();  //  Set up properly after shape generation
+        up = getPlaneNormal();
     }
 
     Vector3f rotateAroundAxis(const Vector3f& P, const Vector3f& axis, const Vector3f& center, float angleRad) const {
@@ -582,7 +573,7 @@ public:
         return center + rotated;
     }
 
-    void rotateAround(const Vector3f& axis, float angleRad) {
+    void rotateAround(const Vector3f& axis, float angleRad) override {
         Vector3f center = getCenter();
         for (auto& P : points) {
             P = rotateAroundAxis(P, axis, center, angleRad);
@@ -590,55 +581,39 @@ public:
         up = rotateAroundAxis(up, axis, Vector3f(0.f, 0.f, 0.f), angleRad);
     }
 
-    void rotateAroundA(Vector3f worldUp,float deltaAngleDegrees, float deltaTime)
-    {
+    void rotateAroundA(Vector3f worldUp, float deltaAngleDegrees, float deltaTime) override {
         using namespace MathUtils;
 
         Vector3f normal = getPlaneNormal();
-
         Vector3f projectedUp = worldUp - normal * dot(worldUp, normal);
 
         if (length(projectedUp) < 0.001f) {
-
             worldUp = Vector3f(1.0f, 0.0f, 0.0f);
             projectedUp = worldUp - normal * dot(worldUp, normal);
         }
 
         Vector3f axis = normalize(projectedUp);
-
         float angleRad = degreesToRadians(deltaAngleDegrees) * deltaTime;
         rotateAround(axis, angleRad);
     }
 
-    void rotateAroundY(float deltaAngleDegrees, float deltaTime) {
-        
-        
+    void rotateAroundY(float deltaAngleDegrees, float deltaTime) override {
         Vector3f Up = Vector3f(0.0f, 1.0f, 0.0f);
-
-
-        rotateAroundA(Up,deltaAngleDegrees,deltaTime);
-       
-    }
-
-    void rotateAroundX(float deltaAngleDegrees, float deltaTime) {
-
-
-        Vector3f Up = Vector3f(0.1f, 0.0f, 0.0f);
-
         rotateAroundA(Up, deltaAngleDegrees, deltaTime);
     }
 
-    void rotateAroundZ(float deltaAngleDegrees, float deltaTime) {
+    void rotateAroundX(float deltaAngleDegrees, float deltaTime) override {
+        Vector3f Up = Vector3f(1.0f, 0.0f, 0.0f);
+        rotateAroundA(Up, deltaAngleDegrees, deltaTime);
+    }
 
-
+    void rotateAroundZ(float deltaAngleDegrees, float deltaTime) override {
         Vector3f Up = Vector3f(0.0f, 0.0f, 1.0f);
-
         rotateAroundA(Up, deltaAngleDegrees, deltaTime);
     }
 
-    void rotateInPlane(float deltaAngleDegrees, float deltaTime) {
+    void rotateInPlane(float deltaAngleDegrees, float deltaTime) override {
         using namespace MathUtils;
-
         Vector3f center = getCenter();
         Vector3f normal = getPlaneNormal();
         float angleRad = degreesToRadians(deltaAngleDegrees) * deltaTime;
@@ -646,13 +621,9 @@ public:
         for (auto& P : points) {
             P = rotateAroundAxis(P, normal, center, angleRad);
         }
-
-        up = rotateAroundAxis(up, normal, Vector3f(0.f, 0.f, 0.f), angleRad); 
+        up = rotateAroundAxis(up, normal, Vector3f(0.f, 0.f, 0.f), angleRad);
     }
-
-
 };
-
 
 void display3DVector(Vector3f v)
 {
@@ -864,12 +835,17 @@ int main()
     WorldSpace ws;
 
 
+    viewWindow windov(VideoMode(800, 600), "HELLO 2");
+
     VObject* pol = new Polygon3D(6);
     
 
     ws.addObject(pol);
 
     window.attachWorldSpace(&ws);
+    windov.attachWorldSpace(&ws);
+
+
 
 
     float moveSpeed = 4.f;
@@ -882,7 +858,11 @@ int main()
 
                 while (window.window->pollEvent(event)) {
                     if (event.type == Event::Closed)
+                    {
                         window.window->close();
+                        windov.window->close();
+                    }
+                        
         
 
                     // Zoom with mouse wheel
@@ -959,9 +939,9 @@ int main()
 
                 
 
-    /*            if (Keyboard::isKeyPressed(Keyboard::R))
+                if (Keyboard::isKeyPressed(Keyboard::R))
                 {
-                    po.rotateAroundX(+4.0f, 1.f);
+                    pol->rotateAroundX(+4.0f, 1.f);
                     
 
 
@@ -970,7 +950,7 @@ int main()
 
                 if (Keyboard::isKeyPressed(Keyboard::T))
                 {
-                    po.rotateAroundX(-4.0f, 1.f);
+                    pol->rotateAroundX(-4.0f, 1.f);
 
 
                 }
@@ -979,7 +959,7 @@ int main()
 
                 if (Keyboard::isKeyPressed(Keyboard::Y))
                 {
-                    po.rotateAroundY(+4.0f, 1.f);
+                    pol->rotateAroundY(+4.0f, 1.f);
 
 
 
@@ -988,7 +968,7 @@ int main()
 
                 if (Keyboard::isKeyPressed(Keyboard::U))
                 {
-                    po.rotateAroundY(-4.0f, 1.f);
+                    pol->rotateAroundY(-4.0f, 1.f);
 
 
                 }
@@ -997,7 +977,7 @@ int main()
 
                 if (Keyboard::isKeyPressed(Keyboard::I))
                 {
-                    po.rotateAroundZ(+4.0f, 1.f);
+                    pol->rotateAroundZ(+4.0f, 1.f);
 
 
 
@@ -1006,11 +986,11 @@ int main()
 
                 if (Keyboard::isKeyPressed(Keyboard::O))
                 {
-                    po.rotateAroundZ(-4.0f, 1.f);
+                    pol->rotateAroundZ(-4.0f, 1.f);
 
 
                 }
-                */
+                
 
                 
         
@@ -1043,57 +1023,57 @@ int main()
 
 
 
-                if (Keyboard::isKeyPressed(Keyboard::R))
-                {
-                    window.cam->rotateAroundX(+4.0f, 1.f);
+                //if (Keyboard::isKeyPressed(Keyboard::R))
+                //{
+                //    window.cam->rotateAroundX(+4.0f, 1.f);
 
 
 
-                }
+                //}
 
 
-                if (Keyboard::isKeyPressed(Keyboard::T))
-                {
-                    window.cam->rotateAroundX(-4.0f, 1.f);
+                //if (Keyboard::isKeyPressed(Keyboard::T))
+                //{
+                //    window.cam->rotateAroundX(-4.0f, 1.f);
 
 
-                }
-
-
-
-                if (Keyboard::isKeyPressed(Keyboard::Y))
-                {
-                    window.cam->rotateAroundY(+4.0f, 1.f);
+                //}
 
 
 
-                }
-
-
-                if (Keyboard::isKeyPressed(Keyboard::U))
-                {
-                    window.cam->rotateAroundY(-4.0f, 1.f);
-
-
-                }
+                //if (Keyboard::isKeyPressed(Keyboard::Y))
+                //{
+                //    window.cam->rotateAroundY(+4.0f, 1.f);
 
 
 
-                if (Keyboard::isKeyPressed(Keyboard::I))
-                {
-                    window.cam->rotateAroundZ(+4.0f, 1.f);
+                //}
+
+
+                //if (Keyboard::isKeyPressed(Keyboard::U))
+                //{
+                //    window.cam->rotateAroundY(-4.0f, 1.f);
+
+
+                //}
 
 
 
-                }
+                //if (Keyboard::isKeyPressed(Keyboard::I))
+                //{
+                //    window.cam->rotateAroundZ(+4.0f, 1.f);
 
 
-                if (Keyboard::isKeyPressed(Keyboard::O))
-                {
-                    window.cam->rotateAroundZ(-4.0f, 1.f);
+
+                //}
 
 
-                }
+                //if (Keyboard::isKeyPressed(Keyboard::O))
+                //{
+                //    window.cam->rotateAroundZ(-4.0f, 1.f);
+
+
+                //}
 
                 //createPerspectiveFragment(p, sc, &po,&window);
 
@@ -1102,13 +1082,14 @@ int main()
 
                 cout << endl;
 
-
+                windov.window->clear();
         window.window->clear();
 
         window.render();
+        windov.render();
         
         window.window->display();
-      
+        windov.window->display();
         
     }
 
