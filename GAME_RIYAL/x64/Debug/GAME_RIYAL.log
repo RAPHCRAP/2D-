@@ -1,19 +1,8 @@
 ﻿C:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Microsoft\VC\v170\Microsoft.CppBuild.targets(531,5): warning MSB8028: The intermediate directory (x64\Debug\) contains files shared from another project (GAME_RIYAL.vcxproj).  This can lead to incorrect clean and rebuild behavior.
   testy.cpp
-D:\WORK\vsCode\PROJ\GAME_RIYAL\testy.cpp(371,43): warning C4267: 'initializing': conversion from 'size_t' to 'unsigned int', possible loss of data
-D:\WORK\vsCode\PROJ\GAME_RIYAL\testy.cpp(371,30): warning C4267: 'initializing': conversion from 'size_t' to 'const unsigned int', possible loss of data
-D:\WORK\vsCode\PROJ\GAME_RIYAL\testy.cpp(494,44): warning C4267: 'argument': conversion from 'size_t' to 'int', possible loss of data
-D:\WORK\vsCode\PROJ\GAME_RIYAL\testy.cpp(522,44): warning C4267: 'argument': conversion from 'size_t' to 'int', possible loss of data
-D:\WORK\vsCode\PROJ\GAME_RIYAL\testy.cpp(592,24): warning C4267: 'initializing': conversion from 'size_t' to 'unsigned int', possible loss of data
-D:\WORK\vsCode\PROJ\GAME_RIYAL\CDS.h(1243,16): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
-  (compiling source file 'testy.cpp')
-      D:\WORK\vsCode\PROJ\GAME_RIYAL\CDS.h(1243,16):
-      the template instantiation context (the oldest one first) is
-          D:\WORK\vsCode\PROJ\GAME_RIYAL\testy.cpp(814,31):
-          see reference to class template instantiation 'AVL<float,Fragment *>' being compiled
-          D:\WORK\vsCode\PROJ\GAME_RIYAL\CDS.h(1227,10):
-          while compiling class template member function 'void AVL<float,Fragment *>::print(void)'
-              D:\WORK\vsCode\PROJ\GAME_RIYAL\testy.cpp(840,19):
-              see the first reference to 'AVL<float,Fragment *>::print' in 'viewWindow::render'
-  
+D:\WORK\vsCode\PROJ\GAME_RIYAL\testy.cpp(382,43): warning C4267: 'initializing': conversion from 'size_t' to 'unsigned int', possible loss of data
+D:\WORK\vsCode\PROJ\GAME_RIYAL\testy.cpp(382,30): warning C4267: 'initializing': conversion from 'size_t' to 'const unsigned int', possible loss of data
+D:\WORK\vsCode\PROJ\GAME_RIYAL\testy.cpp(505,44): warning C4267: 'argument': conversion from 'size_t' to 'int', possible loss of data
+D:\WORK\vsCode\PROJ\GAME_RIYAL\testy.cpp(533,44): warning C4267: 'argument': conversion from 'size_t' to 'int', possible loss of data
+D:\WORK\vsCode\PROJ\GAME_RIYAL\testy.cpp(603,24): warning C4267: 'initializing': conversion from 'size_t' to 'unsigned int', possible loss of data
   GAME_RIYAL.vcxproj -> D:\WORK\vsCode\PROJ\x64\Debug\SFML_TEMP.exe

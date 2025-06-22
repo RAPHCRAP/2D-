@@ -1359,10 +1359,6 @@ public:
         // Get balance factor
         int balance = getBalance(node);
 
-
-        //// DEBUG LOGGING
-        //std::cout << "[BALANCE] Key = " << node->key << ", Balance = " << balance << "\n";
-
         // Left Left Case
         if (balance > 1 && key < node->left->key)
             return rightRotate(node);

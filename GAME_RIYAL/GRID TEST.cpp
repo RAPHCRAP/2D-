@@ -579,7 +579,9 @@
 //        }
 //
 //
-//        insertIntoRayAngles(row);
+//        // LOGGING
+//
+//     /*   insertIntoRayAngles(row);*/
 //
 //        std::cout << " }";
 //

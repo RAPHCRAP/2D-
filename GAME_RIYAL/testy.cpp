@@ -137,7 +137,7 @@ public:
 
 
 
-    Camera(Vector3f pos = { 0, 0, -500 }, Vector3f lookAt = { 0, 0, 0 }, Vector3f worldUp = { 0, 1, 0 },float scale=1.f,float focalLength=500.f) : scale(scale),focalLength(focalLength)
+    Camera(Vector3f pos = { 0, 0, 500 }, Vector3f lookAt = { 0, 0, 0 }, Vector3f worldUp = { 0, 1, 0 },float scale=1.f,float focalLength=500.f) : scale(scale),focalLength(focalLength)
     {
         using namespace MathUtils;
         position = pos;
@@ -303,6 +303,17 @@ namespace MathUtils
         return std::abs(distance);
     }
 
+
+    bool isInFrontOfDirectedPlane(Vector3f point, Vector3f position, Vector3f forward)
+    {
+        using namespace MathUtils;
+
+        Vector3f toPolygon = point - position;
+
+        float dotResult = dot(toPolygon, forward);
+
+        return dotResult > 0;
+    }
 }
 
 
@@ -725,16 +736,7 @@ void display2DVector(Vector2f v)
 //}
 
 
-bool isInFrontOfDirectedPlane(Vector3f point, Vector3f position,Vector3f forward)
-{
-    using namespace MathUtils;
 
-    Vector3f toPolygon = point - position;
-
-    float dotResult = dot(toPolygon, forward);
-
-    return dotResult > 0;
-}
 
 class viewWindow;
 
@@ -1103,14 +1105,14 @@ int main()
                 if (Keyboard::isKeyPressed(Keyboard::W))
                 {
 
-                    pov->move({ 0, -moveSpeed, 0 });
+                    pov->move({ 0, moveSpeed, 0 });
 
 
                 }
                 if (Keyboard::isKeyPressed(Keyboard::S))
                 {
 
-                    pov->move({ 0, moveSpeed, 0 });
+                    pov->move({ 0, -moveSpeed, 0 });
 
                 }
 
