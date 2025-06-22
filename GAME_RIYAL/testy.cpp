@@ -837,7 +837,6 @@ public:
  
         }
 
-        tree.print();
 
 
         if (!tree.isEmpty()) {

@@ -1342,15 +1342,14 @@ public:
             return new Node(key, data);
 
         if (key < node->key) {
-            std::cout << "[INSERT] " << key << " < " << node->key << "  going LEFT\n";
             node->left = insert(node->left, key, data);
         }
         else if (key > node->key) {
-            std::cout << "[INSERT] " << key << " > " << node->key << "  going RIGHT\n";
+
             node->right = insert(node->right, key, data);
         }
         else {
-            std::cout << "[INSERT] " << key << " == " << node->key << "  updating node\n";
+
             node->data = data;
         }
 
@@ -1360,9 +1359,6 @@ public:
         // Get balance factor
         int balance = getBalance(node);
 
-        std::cout << "[INSERT] Key: " << key
-            << ", Node: " << node->key
-            << ", Balance: " << balance << "\n";
 
         //// DEBUG LOGGING
         //std::cout << "[BALANCE] Key = " << node->key << ", Balance = " << balance << "\n";
