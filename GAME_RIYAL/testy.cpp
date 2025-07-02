@@ -137,7 +137,7 @@ public:
 
 
 
-    Camera(Vector3f pos = { 0, 0, 500 }, Vector3f lookAt = { 0, 0, 0 }, Vector3f worldUp = { 0, 1, 0 },float scale=1.f,float focalLength=500.f) : scale(scale),focalLength(focalLength)
+    Camera(Vector3f pos = { 0, 0, -500 }, Vector3f lookAt = { 0, 0, 0 }, Vector3f worldUp = { 0, 1, 0 },float scale=1.f,float focalLength=500.f) : scale(scale),focalLength(focalLength)
     {
         using namespace MathUtils;
         position = pos;
@@ -477,6 +477,98 @@ public:
     virtual void setColor(const sf::Color& col) = 0;
     virtual void setPosition(const Vector3f& newPos) = 0;
 
+    void handleInput(float moveSpeed)
+    {
+
+        if (Keyboard::isKeyPressed(Keyboard::W))
+        {
+            this->move({ 0, -moveSpeed, 0 });
+
+
+
+        }
+        if (Keyboard::isKeyPressed(Keyboard::S))
+        {
+            this->move({ 0, moveSpeed, 0 });
+
+
+        }
+
+        if (Keyboard::isKeyPressed(Keyboard::A))
+        {
+            this->move({ -moveSpeed, 0, 0 });
+
+
+        }
+        if (Keyboard::isKeyPressed(Keyboard::D))
+        {
+            this->move({ moveSpeed, 0, 0 });
+
+
+        }
+
+
+
+
+
+    }
+
+    void handleRotation(float deltaAngle,float deltaTime)
+    {
+        if (Keyboard::isKeyPressed(Keyboard::R))
+        {
+            this->rotateAroundX(deltaAngle, deltaTime);
+
+
+
+        }
+
+
+        if (Keyboard::isKeyPressed(Keyboard::T))
+        {
+            this->rotateAroundX(-deltaAngle, deltaTime);
+
+
+        }
+
+
+
+        if (Keyboard::isKeyPressed(Keyboard::Y))
+        {
+            this->rotateAroundY(deltaAngle, deltaTime);
+
+
+
+        }
+
+
+        if (Keyboard::isKeyPressed(Keyboard::U))
+        {
+            this->rotateAroundY(-deltaAngle, deltaTime);
+
+
+        }
+
+
+
+        if (Keyboard::isKeyPressed(Keyboard::I))
+        {
+            this->rotateAroundZ(deltaAngle, deltaTime);
+
+
+
+        }
+
+
+        if (Keyboard::isKeyPressed(Keyboard::O))
+        {
+            this->rotateAroundZ(-deltaAngle, deltaTime);
+
+
+        }
+
+    }
+
 
 };
 
@@ -683,6 +775,9 @@ public:
         }
         up = rotateAroundAxis(up, normal, Vector3f(0.f, 0.f, 0.f), angleRad);
     }
+
+
+   
 };
 
 void display3DVector(Vector3f v)
@@ -874,7 +969,152 @@ public:
 
 
 
-   
+    void handleInput(float moveSpeed)
+    {
+
+        using namespace MathUtils;
+
+        Vector3f dir = cam->forward;
+        Vector3f per = cam->right();
+
+        if (Keyboard::isKeyPressed(Keyboard::W))
+        {
+            
+            
+            cam->position += dir * moveSpeed;
+
+
+
+
+
+        }
+        if (Keyboard::isKeyPressed(Keyboard::S))
+        {
+            cam->position -= dir * moveSpeed;
+
+
+        }
+
+        if (Keyboard::isKeyPressed(Keyboard::A))
+        {
+            cam->position -= per * moveSpeed;
+
+
+        }
+        if (Keyboard::isKeyPressed(Keyboard::D))
+        {
+            cam->position += per * moveSpeed;
+
+
+        }
+
+
+
+
+
+    }
+
+    void handleRotation(float deltaAngle, float deltaTime)
+    {
+        if (Keyboard::isKeyPressed(Keyboard::R))
+        {
+            this->cam->rotateAroundX(deltaAngle, deltaTime);
+
+
+
+        }
+
+
+        if (Keyboard::isKeyPressed(Keyboard::T))
+        {
+            this->cam->rotateAroundX(-deltaAngle, deltaTime);
+
+
+        }
+
+
+
+        if (Keyboard::isKeyPressed(Keyboard::Y))
+        {
+            this->cam->rotateAroundY(deltaAngle, deltaTime);
+
+
+
+        }
+
+
+        if (Keyboard::isKeyPressed(Keyboard::U))
+        {
+            this->cam->rotateAroundY(-deltaAngle, deltaTime);
+
+
+        }
+
+
+
+        if (Keyboard::isKeyPressed(Keyboard::I))
+        {
+            this->cam->rotateAroundZ(deltaAngle, deltaTime);
+
+
+
+        }
+
+
+        if (Keyboard::isKeyPressed(Keyboard::O))
+        {
+            this->cam->rotateAroundZ(-deltaAngle, deltaTime);
+
+
+        }
+
+    }
+
+    void handlePanning()
+    {
+        static bool panningMode = false;
+        static Vector2i prevMousePos;
+        static bool firstFrameInPanning = true;
+        static bool tabPreviouslyPressed;
+
+        if (Keyboard::isKeyPressed(Keyboard::Tab)) 
+        {
+            tabPreviouslyPressed = false;
+
+            if (!tabPreviouslyPressed) {
+                panningMode = !panningMode;
+                firstFrameInPanning = true;
+            }
+
+            tabPreviouslyPressed = true;
+        }
+        else {
+            tabPreviouslyPressed = false;
+        }
+
+        if (panningMode)
+        {
+            Vector2i currentMousePos = Mouse::getPosition(*(this->window));
+
+            if (firstFrameInPanning)
+            {
+                prevMousePos = currentMousePos;
+                firstFrameInPanning = false;
+            }
+            else
+            {
+                Vector2i delta = currentMousePos - prevMousePos;
+                prevMousePos = currentMousePos;
+
+                float sensitivity = 1.0f;
+                float yaw = -delta.x * sensitivity;
+                float pitch = -delta.y * sensitivity;
+
+                this->cam->rotateYawPitch(yaw, pitch);
+            }
+        }
+
+    }
 
     
     void clear() {
@@ -896,8 +1136,6 @@ int main()
     WorldSpace ws;
 
 
-    viewWindow windov(VideoMode(800, 600), "HELLO 2");
-
     VObject* pol = new Polygon3D(60);
     pol->fill();
 
@@ -905,13 +1143,13 @@ int main()
 
     
 
-    VObject* pov = new Polygon3D(60);
+    VObject* pov = new Polygon3D(4);
 
-    pov->fill();
+  /*  pov->fill();*/
 
     pov->setColor(Color(0, 255, 0));
 
-
+    pov->setPosition({ 40,40,20 });
     
     
 
@@ -919,12 +1157,12 @@ int main()
     ws.addObject(pov);
 
     window.attachWorldSpace(&ws);
-    windov.attachWorldSpace(&ws);
+
 
 
     pol->fill();
 
-    float moveSpeed = 4.f;
+    float moveSpeed = 19.f;
 
 
     while (window.window->isOpen())
@@ -936,7 +1174,7 @@ int main()
                     if (event.type == Event::Closed)
                     {
                         window.window->close();
-                        windov.window->close();
+                        /*windov.window->close();*/
                     }
                         
         
@@ -944,259 +1182,42 @@ int main()
                     // Zoom with mouse wheel
                     if (event.type == Event::MouseWheelScrolled) {
                         float zoom = event.mouseWheelScroll.delta * 10.0f;
-                        /*window.cam->move({ 0, 0, zoom });*/
-                        pov->move({ 0, 0, zoom });
+                        window.cam->move({ 0, zoom,  0});
+                       /* pov->move({ 0, 0, zoom });*/
                     }
-                }
-
-                
-
-                //static bool firstClick = true;
-                //static Vector2i prevMousePos;
-
-                //// === Mouse Look Code ===
-                //if (Mouse::isButtonPressed(Mouse::Right)) {
-                //    Vector2i currentMousePos = Mouse::getPosition(window);
-
-                //    if (firstClick) {
-                //        prevMousePos = currentMousePos;
-                //        firstClick = false;
-                //    }
-                //    else {
-                //        Vector2i delta = currentMousePos - prevMousePos;
-                //        prevMousePos = currentMousePos;
-
-                //        float sensitivity = 1.0f;
-                //        float yaw = delta.x * sensitivity;
-                //        float pitch = delta.y * sensitivity;
-
-                //        sc->rotateYawPitch(yaw, pitch);
-                //    }
-                //}
-                //else {
-                //    firstClick = true;
-                //}
-
-                /*cout << "screen centre:"; display3DVector(window.cam->position); 
-                cout << "object 1:"; display3DVector(pol->getPosition());
-                cout << "object 2:"; display3DVector(pov->getPosition());*/
-
-
-               
-             /*   
-                if (Keyboard::isKeyPressed(Keyboard::W))
-                {
-                    po.move({ 0, -moveSpeed, 0 });
 
 
 
-                }
-                if (Keyboard::isKeyPressed(Keyboard::S))
-                {
-                    po.move({ 0, moveSpeed, 0 });
-
-
-                }
-
-                if (Keyboard::isKeyPressed(Keyboard::A))
-                {
-                    po.move({ -moveSpeed, 0, 0 });
-
-
-                }
-                if (Keyboard::isKeyPressed(Keyboard::D))
-                {
-                    po.move({ moveSpeed, 0, 0 });
-
-
-                }
-
-
-                */
-
-
-                
-
-                if (Keyboard::isKeyPressed(Keyboard::R))
-                {
-                    pol->rotateAroundX(+4.0f, 1.f);
                     
 
-
                 }
 
-
-                if (Keyboard::isKeyPressed(Keyboard::T))
-                {
-                    pol->rotateAroundX(-4.0f, 1.f);
-
-
-                }
+               
 
 
 
-                if (Keyboard::isKeyPressed(Keyboard::Y))
-                {
-                    pol->rotateAroundY(+4.0f, 1.f);
+               /* pol->handleInput(moveSpeed);
+                pol->handleRotation(4.f,1.f);*/
 
 
-
-                }
-
-
-                if (Keyboard::isKeyPressed(Keyboard::U))
-                {
-                    pol->rotateAroundY(-4.0f, 1.f);
-
-
-                }
-
-
-
-                if (Keyboard::isKeyPressed(Keyboard::I))
-                {
-                    pol->rotateAroundZ(+4.0f, 1.f);
-
-
-
-                }
-
-
-                if (Keyboard::isKeyPressed(Keyboard::O))
-                {
-                    pol->rotateAroundZ(-4.0f, 1.f);
-
-
-                }
-                
+                window.handleInput(moveSpeed);
+                window.handleRotation(4.f,1.f);
+                window.handlePanning();
+             
 
                 
-        /*
-                if (Keyboard::isKeyPressed(Keyboard::W))
-                {
-   
-                           window.cam->move({ 0, -moveSpeed, 0 });
-
-
-                }
-                if (Keyboard::isKeyPressed(Keyboard::S))
-                {
-  
-                    window.cam->move({ 0, moveSpeed, 0 });
-
-                }
-
-                if (Keyboard::isKeyPressed(Keyboard::A))
-                {
-  
-                    window.cam->move({ -moveSpeed, 0, 0 });
-
-                }
-                if (Keyboard::isKeyPressed(Keyboard::D))
-                {
- 
-                    window.cam->move({ moveSpeed, 0, 0 });
-
-                }*/
-
-
-
-
-                if (Keyboard::isKeyPressed(Keyboard::W))
-                {
-
-                    pov->move({ 0, moveSpeed, 0 });
-
-
-                }
-                if (Keyboard::isKeyPressed(Keyboard::S))
-                {
-
-                    pov->move({ 0, -moveSpeed, 0 });
-
-                }
-
-                if (Keyboard::isKeyPressed(Keyboard::A))
-                {
-
-                    pov->move({ -moveSpeed, 0, 0 });
-
-                }
-                if (Keyboard::isKeyPressed(Keyboard::D))
-                {
-
-                    pov->move({ moveSpeed, 0, 0 });
-
-                }
-
-
-                //if (Keyboard::isKeyPressed(Keyboard::R))
-                //{
-                //    window.cam->rotateAroundX(+4.0f, 1.f);
-
-
-
-                //}
-
-
-                //if (Keyboard::isKeyPressed(Keyboard::T))
-                //{
-                //    window.cam->rotateAroundX(-4.0f, 1.f);
-
-
-                //}
-
-
-
-                //if (Keyboard::isKeyPressed(Keyboard::Y))
-                //{
-                //    window.cam->rotateAroundY(+4.0f, 1.f);
-
-
-
-                //}
-
-
-                //if (Keyboard::isKeyPressed(Keyboard::U))
-                //{
-                //    window.cam->rotateAroundY(-4.0f, 1.f);
-
-
-                //}
-
-
-
-                //if (Keyboard::isKeyPressed(Keyboard::I))
-                //{
-                //    window.cam->rotateAroundZ(+4.0f, 1.f);
-
-
-
-                //}
-
-
-                //if (Keyboard::isKeyPressed(Keyboard::O))
-                //{
-                //    window.cam->rotateAroundZ(-4.0f, 1.f);
-
-
-                //}
-
-                //createPerspectiveFragment(p, sc, &po,&window);
-
-                //cout << "fragment : "; display2DVector(p.getCenter());
-
+        
 
                 
 
-          /*      windov.window->clear();*/
+
         window.window->clear();
 
         window.render();
-        /*windov.render();*/
+
         
         window.window->display();
-        /*windov.windov->display();*/
+
         
         cout << endl;
 

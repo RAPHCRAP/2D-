@@ -24,6 +24,12 @@
     <ClCompile Include="TESTINGCSD.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="LocalMovement.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Tree.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="CDS.h">

@@ -2,7 +2,7 @@
   testy.cpp
 D:\WORK\vsCode\PROJ\GAME_RIYAL\testy.cpp(382,43): warning C4267: 'initializing': conversion from 'size_t' to 'unsigned int', possible loss of data
 D:\WORK\vsCode\PROJ\GAME_RIYAL\testy.cpp(382,30): warning C4267: 'initializing': conversion from 'size_t' to 'const unsigned int', possible loss of data
-D:\WORK\vsCode\PROJ\GAME_RIYAL\testy.cpp(505,44): warning C4267: 'argument': conversion from 'size_t' to 'int', possible loss of data
-D:\WORK\vsCode\PROJ\GAME_RIYAL\testy.cpp(533,44): warning C4267: 'argument': conversion from 'size_t' to 'int', possible loss of data
-D:\WORK\vsCode\PROJ\GAME_RIYAL\testy.cpp(603,24): warning C4267: 'initializing': conversion from 'size_t' to 'unsigned int', possible loss of data
+D:\WORK\vsCode\PROJ\GAME_RIYAL\testy.cpp(597,44): warning C4267: 'argument': conversion from 'size_t' to 'int', possible loss of data
+D:\WORK\vsCode\PROJ\GAME_RIYAL\testy.cpp(625,44): warning C4267: 'argument': conversion from 'size_t' to 'int', possible loss of data
+D:\WORK\vsCode\PROJ\GAME_RIYAL\testy.cpp(695,24): warning C4267: 'initializing': conversion from 'size_t' to 'unsigned int', possible loss of data
   GAME_RIYAL.vcxproj -> D:\WORK\vsCode\PROJ\x64\Debug\SFML_TEMP.exe

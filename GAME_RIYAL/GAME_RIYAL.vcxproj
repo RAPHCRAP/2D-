@@ -20,8 +20,10 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="GRID TEST.cpp" />
+    <ClCompile Include="LocalMovement.cpp" />
     <ClCompile Include="TESTINGCSD.cpp" />
     <ClCompile Include="testy.cpp" />
+    <ClCompile Include="Tree.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="CDS.h" />
