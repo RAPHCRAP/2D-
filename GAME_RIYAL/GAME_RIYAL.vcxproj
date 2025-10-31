@@ -23,6 +23,7 @@
     <ClCompile Include="LocalMovement.cpp" />
     <ClCompile Include="TESTINGCSD.cpp" />
     <ClCompile Include="testy.cpp" />
+    <ClCompile Include="testy2.cpp" />
     <ClCompile Include="Tree.cpp" />
   </ItemGroup>
   <ItemGroup>

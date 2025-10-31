@@ -425,6 +425,8 @@ public:
     }
 
 
+    
+
     T peek()
     {
         if (isEmpty())
@@ -1197,8 +1199,362 @@ public:
 };
 
 
+template <typename T, typename U ,typename Compare = std::less<T>>
+class AVL 
+{
+    Compare comp;
+public:
+    struct Node {
+        T key;
+        U data;
+        int height;
+        Node* left;
+        Node* right;
+
+        Node(const T& k, const U& d) : key(k), data(d), height(1), left(nullptr), right(nullptr) {}
+    };
+
+    Node* root;
+
+    int getHeight(Node* node) const
+    {
+        return node ? node->height : 0;
+    }
+
+    int getBalance(Node* node) const
+    {
+        return node ? getHeight(node->left) - getHeight(node->right) : 0;
+    }
+
+    void print()
+    {
+
+        cout << endl << endl;
+
+        if (isEmpty())
+        {
+            return;
+        }
+
+        Queue<Node*> q;
+
+        q.enqueue(root);
+
+        Node* curr;
+
+        int TH = height();
+        TH--;
+
+        for (int i = 0; i <= TH; i++)
+        {
+
+            for (int sp = 0; sp < pow(2, TH - i) - 1; sp++)
+            {
+                cout << string(1, ' ');
+            }
+
+            for (int l = 0; l < pow(2, i); l++)
+            {
+
+
+                q.dequeue(curr);
+
+
+
+                if (curr)
+                {
+                    cout << curr->key;
+
+                    q.enqueue(curr->left);
+                    q.enqueue(curr->right);
+                }
+                else
+                {
+                    cout << string(1, '_');
+
+                    q.enqueue(nullptr);
+                    q.enqueue(nullptr);
+                }
+
+                for (int sp = 0; sp < pow(2, TH - i + 1) - 1; sp++)
+                {
+                    cout << string(1, ' ');
+                }
+            }
+
+            cout << endl;
+        }
+
+        cout << endl << endl;
+    }
+
+ 
+
+    Node* rightRotate(Node* y) {
+        if (!y || !y->left) return y;
+
+        Node* x = y->left;
+        Node* T2 = x->right;
+
+        x->right = y;
+        y->left = T2;
+
+        y->height = std::max(getHeight(y->left), getHeight(y->right)) + 1;
+        x->height = std::max(getHeight(x->left), getHeight(x->right)) + 1;
+
+        return x;
+    }
+
+    Node* leftRotate(Node* x) {
+        if (!x || !x->right) return x;
+
+        Node* y = x->right;
+        Node* T2 = y->left;
+
+        y->left = x;
+        x->right = T2;
+
+        x->height = std::max(getHeight(x->left), getHeight(x->right)) + 1;
+        y->height = std::max(getHeight(y->left), getHeight(y->right)) + 1;
+
+        return y;
+    }
+
+
+
+    Node* insert(Node* node, const T& key, const U& data) {
+        if (!node)
+            return new Node(key, data);
+
+        if (comp(key, node->key))
+        {
+            node->left = insert(node->left, key, data);
+        }
+        else if (comp(node->key, key))
+        {
+
+            node->right = insert(node->right, key, data);
+        }
+        else {
+            node->data = data;
+            
+        }
+
+        // Update height
+        node->height = std::max(getHeight(node->left), getHeight(node->right)) + 1;
+
+        // Get balance factor
+        int balance = getBalance(node);
+
+        // Left Left Case
+        if (balance > 1 && key < node->left->key)
+            return rightRotate(node);
+
+        // Right Right Case
+        if (balance < -1 && key > node->right->key)
+            return leftRotate(node);
+
+        // Left Right Case
+        if (balance > 1 && key > node->left->key) {
+            node->left = leftRotate(node->left);
+            return rightRotate(node);
+        }
+
+        // Right Left Case
+        if (balance < -1 && key < node->right->key) {
+            node->right = rightRotate(node->right);
+            return leftRotate(node);
+        }
+
+        return node;
+    }
+
+
+
+
+    Node* deleteNode(Node* root, const T& key)
+    {
+        // ... (existing deletion code until height update)
+
+        // Update height
+        root->height = 1 + std::max(getHeight(root->left), getHeight(root->right));
+
+        int balance = getBalance(root);
+
+        // Left Left Case
+        if (balance > 1 && getBalance(root->left) >= 0)
+            return rightRotate(root);
+
+        // Left Right Case
+        if (balance > 1 && getBalance(root->left) < 0)
+        {
+            root->left = leftRotate(root->left);
+            return rightRotate(root);
+        }
+
+        // Right Right Case
+        if (balance < -1 && getBalance(root->right) <= 0)
+            return leftRotate(root);
+
+        // Right Left Case
+        if (balance < -1 && getBalance(root->right) > 0)
+        {
+            root->right = rightRotate(root->right);
+            return leftRotate(root);
+        }
+
+        return root;
+    }
+
+    Node* minValueNode(Node* node) const
+    {
+        Node* current = node;
+        while (current && current->left)
+            current = current->left;
+        return current;
+    }
+
+    
+
+    void clear(Node* node)
+    {
+        if (!node)
+            return;
+        clear(node->left);
+        clear(node->right);
+        delete node;
+    }
+
+    Node* copyTree(Node* other) const
+    {
+        if (!other)
+            return nullptr;
+        Node* newNode = new Node(other->key, other->data);
+        newNode->left = copyTree(other->left);
+        newNode->right = copyTree(other->right);
+        newNode->height = other->height;
+        return newNode;
+    }
+
+    void printInOrder(Node* node) const
+    {
+        if (!node)
+            return;
+        printInOrder(node->left);
+        std::cout << "Key: " << node->key << ", Data: " << node->data << std::endl;
+        printInOrder(node->right);
+    }
+
+    Node* find(Node* node, const T& key) const
+    {
+        if (!node)
+            return nullptr;
+        if (key < node->key)
+            return find(node->left, key);
+        else if (key > node->key)
+            return find(node->right, key);
+        else
+            return node;
+    }
+
+public:
+   /* AVL() : root(nullptr) {}*/
+
+
+    AVL(Compare comp_ = Compare()) : comp(comp_), root(nullptr) {}
+
+
+
+
+
+    AVL(const AVL& other)
+    {
+        root = copyTree(other.root);
+    }
+
+    ~AVL()
+    {
+        clear();
+    }
+
+    void insert(const T& key, const U& data)
+    {
+        root = insert(root, key, data);
+    }
+
+    bool remove(const T& key)
+    {
+        if (!contains(key))
+            return false;
+        root = deleteNode(root, key);
+        return true;
+    }
+
+    void clear()
+    {
+        clear(root);
+        root = nullptr;
+    }
+
+    bool isEmpty() const
+    {
+        return root == nullptr;
+    }
+
+    size_t height() const
+    {
+        return getHeight(root);
+    }
+
+    bool contains(const T& key) const
+    {
+        return find(root, key) != nullptr;
+    }
+
+    U& get(const T& key)
+    {
+        Node* node = find(root, key);
+        if (!node)
+            throw std::out_of_range("Key not found");
+        return node->data;
+    }
+
+    const U& get(const T& key) const
+    {
+        Node* node = find(root, key);
+        if (!node)
+            throw std::out_of_range("Key not found");
+        return node->data;
+    }
+
+    void displayInOrder() const
+    {
+        printInOrder(root);
+    }
+
+    void printTree(Node* node, int indent = 0) const {
+        if (!node) return;
+
+        for (int i = 0; i < indent; ++i) std::cout << "   ";
+        std::cout << node->key << "\n";
+
+        if (node->left || node->right) {
+            printTree(node->left, indent + 1);
+            printTree(node->right, indent + 1);
+        }
+    }
+
+
+    void displayTree() const {
+        std::cout << "=== TREE STRUCTURE ===\n";
+        printTree(root);
+        std::cout << "======================\n";
+    }
+};
+
+
 template <typename T, typename U>
-class AVL
+class AvL
 {
 public:
     struct Node
@@ -1286,13 +1642,13 @@ public:
         cout << endl << endl;
     }
 
- 
+
 
     Node* rightRotate(Node* y) {
         if (!y || !y->left) return y;  //  prevent nullptr bugs
 
 
-     
+
 
         Node* x = y->left;
         Node* T2 = x->right;
@@ -1314,7 +1670,7 @@ public:
     Node* leftRotate(Node* x) {
         if (!x || !x->right) return x;  // prevent nullptr bugs
 
- 
+
 
 
         Node* y = x->right;
@@ -1335,7 +1691,7 @@ public:
 
 
     Node* insert(Node* node, const T& key, const U& data) {
-       
+
 
 
         if (!node)
@@ -1425,7 +1781,7 @@ public:
         return current;
     }
 
-    
+
 
     void clear(Node* node)
     {
@@ -1469,14 +1825,14 @@ public:
     }
 
 public:
-    AVL() : root(nullptr) {}
+    AvL() : root(nullptr) {}
 
-    AVL(const AVL& other)
+    AvL(const AvL& other)
     {
         root = copyTree(other.root);
     }
 
-    ~AVL()
+    ~AvL()
     {
         clear();
     }
@@ -1555,6 +1911,7 @@ public:
         std::cout << "======================\n";
     }
 };
+
 
 
 template <typename T>
